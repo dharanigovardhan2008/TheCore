@@ -20,7 +20,7 @@ export const viewport = {
   viewportFit: "cover",
 };
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thecore.isroot.in";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thecore.indevs.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

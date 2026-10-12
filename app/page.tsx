@@ -5,7 +5,7 @@ import type { ElementType, ReactNode } from "react";
 import Brand from "@/components/ui/Brand";
 import { createClient } from "@/utils/supabase/server";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.isroot.in';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.indevs.in';
 
 export const metadata: Metadata = {
   title: "TheCore: track your projects, hosting platforms and .env files",
