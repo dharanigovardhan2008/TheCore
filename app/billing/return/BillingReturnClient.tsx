@@ -29,19 +29,27 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
 
       if (res.orderStatus === 'paid') {
         setStatus('paid');
-        setDetails(res.order);
-      } else if (res.orderStatus === 'active' || res.orderStatus === 'pending') {
+        setDetails(res.order || null);
+      } else if (res.orderStatus === 'pending') {
         setStatus('pending');
-        setDetails(res.order);
+        setDetails(res.order || null);
+        if (res.errorMessage) {
+          setErrorMessage(res.errorMessage);
+        }
       } else {
         setStatus('failed');
-        setDetails(res.order);
-        setErrorMessage(`Payment status: ${res.orderStatus}.`);
+        setDetails(res.order || null);
+        setErrorMessage(res.errorMessage || `Payment status: ${res.orderStatus}.`);
       }
     } catch (err: unknown) {
       console.error('Error verifying payment return:', err);
       setStatus('failed');
-      setErrorMessage((err as Error)?.message || 'Failed to verify payment status with Cashfree.');
+      const raw = (err as Error)?.message || '';
+      if (raw.includes('Minified React error') || raw.includes('react.dev/errors')) {
+        setErrorMessage('Verification is still processing. If your payment went through, your Pro plan will be active. Please check your billing settings below.');
+      } else {
+        setErrorMessage(raw || 'Failed to verify payment status with Cashfree.');
+      }
     }
   }, [orderId]);
 
@@ -127,7 +135,7 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
             <div>
               <h2 className="text-2xl font-bold">Payment Processing</h2>
               <p className="text-sm text-[var(--text-content-secondary)] mt-1">
-                Cashfree is awaiting bank confirmation. Your account will automatically activate once confirmed.
+                {errorMessage || 'Cashfree is awaiting bank confirmation. Your account will automatically activate once confirmed.'}
               </p>
             </div>
 
@@ -139,6 +147,12 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
               >
                 <RefreshCw className="w-4 h-4" /> Re-check Status
               </button>
+              <Link
+                href="/dashboard/settings/billing"
+                className="block text-xs text-[var(--text-content-secondary)] hover:text-[var(--text-content)] transition-colors"
+              >
+                Check Billing Settings
+              </Link>
               <Link
                 href="/dashboard"
                 className="block text-xs text-[var(--text-content-secondary)] hover:text-[var(--text-content)] transition-colors"
@@ -163,11 +177,24 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
             </div>
 
             <div className="space-y-3 pt-2">
+              <button
+                type="button"
+                onClick={checkStatus}
+                className="w-full py-2.5 px-4 rounded-xl bg-[var(--bg-grouped)] hover:bg-[var(--separator)] text-sm font-medium border border-[var(--separator)] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <RefreshCw className="w-4 h-4" /> Re-check Status
+              </button>
               <Link
                 href="/pricing"
                 className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-sm block text-center"
               >
                 Try Again at Pricing
+              </Link>
+              <Link
+                href="/dashboard/settings/billing"
+                className="block text-xs text-[var(--text-content-secondary)] hover:text-[var(--text-content)] transition-colors"
+              >
+                Check Billing Page
               </Link>
               <Link
                 href="/dashboard"

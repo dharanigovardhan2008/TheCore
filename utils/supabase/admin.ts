@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
+export function hasServiceRoleKey(): boolean {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
+}
+
 /**
  * Server-only Supabase client initialized with the SERVICE ROLE key.
  * Used strictly for webhooks, admin panel operations, and server-side order fulfillment.
@@ -11,14 +15,10 @@ export function createAdminClient() {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mock-project.supabase.co';
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!serviceRoleKey) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY is not defined in production environment.');
-    } else {
-      console.warn('[Supabase Admin] SUPABASE_SERVICE_ROLE_KEY is not defined in .env.local. Add it from Supabase Dashboard > Project Settings > API for full admin and webhook bypass capabilities.');
-    }
+    console.warn('[Supabase Admin] SUPABASE_SERVICE_ROLE_KEY is not defined in environment variables. Admin capabilities requiring service role will fall back.');
   }
 
   return createClient(supabaseUrl, serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'mock-service-role-key', {

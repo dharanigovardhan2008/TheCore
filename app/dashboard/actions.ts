@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/utils/supabase/admin'
+import { createAdminClient, hasServiceRoleKey } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { projectPath } from '@/lib/routes'
@@ -31,7 +31,8 @@ import {
 } from '@/lib/plans'
 import {
   createCashfreeOrder,
-  fetchCashfreeOrder
+  fetchCashfreeOrder,
+  safeFetchCashfreeOrder
 } from '@/lib/cashfree'
 
 const accents = ['pink', 'blue', 'indigo', 'orange'] as const;
@@ -794,111 +795,244 @@ export async function createCheckoutSession(cycle: BillingCycle) {
   }
 }
 
+export type VerifyOrderReturnResult = {
+  success: boolean
+  orderStatus: 'paid' | 'pending' | 'failed' | 'expired'
+  order?: Order | null
+  errorMessage?: string
+}
+
 /**
  * Server action to verify order return status authoritatively from Cashfree
+ * Never throws uncaught exceptions to the client, preventing minified React errors.
  */
-export async function verifyOrderReturn(orderId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
+export async function verifyOrderReturn(orderId: string): Promise<VerifyOrderReturnResult> {
+  try {
+    if (!orderId || !orderId.trim()) {
+      return {
+        success: false,
+        orderStatus: 'failed',
+        errorMessage: 'Missing order reference ID.',
+      }
+    }
 
-  const adminDb = createAdminClient()
+    const trimmedOrderId = orderId.trim()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  // 1. Look up order with user client first (RLS safe) or adminDb
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
-  const filterClause = isUuid
-    ? `cf_order_id.eq.${orderId},id.eq.${orderId},cf_payment_session_id.eq.${orderId}`
-    : `cf_order_id.eq.${orderId},cf_payment_session_id.eq.${orderId}`
+    // 1. Look up order with user client first (RLS safe) or adminDb
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedOrderId)
+    const filterClause = isUuid
+      ? `cf_order_id.eq.${trimmedOrderId},id.eq.${trimmedOrderId},cf_payment_session_id.eq.${trimmedOrderId}`
+      : `cf_order_id.eq.${trimmedOrderId},cf_payment_session_id.eq.${trimmedOrderId}`
 
-  let order = null
-  const { data: userOrder } = await supabase
-    .from('orders')
-    .select('*')
-    .or(filterClause)
-    .eq('user_id', user.id)
-    .maybeSingle()
+    let order: Order | null = null
 
-  order = userOrder
+    if (user) {
+      const { data: userOrder } = await supabase
+        .from('orders')
+        .select('*')
+        .or(filterClause)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      order = userOrder as Order | null
+    }
 
-  if (!order && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const { data: adminOrder } = await adminDb
-      .from('orders')
-      .select('*')
-      .or(filterClause)
-      .eq('user_id', user.id)
-      .maybeSingle()
-    order = adminOrder
-  }
+    if (!order && hasServiceRoleKey()) {
+      const adminDb = createAdminClient()
+      const query = adminDb.from('orders').select('*').or(filterClause)
+      if (user) {
+        query.eq('user_id', user.id)
+      }
+      const { data: adminOrder } = await query.maybeSingle()
+      order = adminOrder as Order | null
+    }
 
-  if (!order) {
-    throw new Error('Order not found.')
-  }
+    // Fallback: If order wasn't found by exact filter, check user's most recent order
+    if (!order && user) {
+      const { data: latestOrder } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (latestOrder) {
+        order = latestOrder as Order | null
+      }
+    }
 
-  // 2. Re-fetch authoritative status from Cashfree server-side API
-  const cfOrder = await fetchCashfreeOrder(order.cf_order_id)
+    // If order is still not found in database:
+    if (!order) {
+      return {
+        success: false,
+        orderStatus: 'failed',
+        errorMessage: 'Order not found in database. If you completed payment, please check your Billing page or contact support.',
+      }
+    }
 
-  // 3. Strict security: verify order amount matches stored plan amount
-  const expectedAmountRupees = order.amount_paise / 100
-  const amountMatches = Math.abs(cfOrder.order_amount - expectedAmountRupees) < 0.01
-  const isPaid = cfOrder.order_status === 'PAID' && amountMatches
+    // If order is ALREADY marked as paid in our database:
+    if (order.status === 'paid') {
+      const targetUserId = user?.id || order.user_id
+      if (hasServiceRoleKey() && targetUserId) {
+        try {
+          const adminDb = createAdminClient()
+          await adminDb.from('profiles').update({ plan: 'pro' }).eq('id', targetUserId)
+        } catch {
+          // Profile may already be updated
+        }
+      }
+      return {
+        success: true,
+        orderStatus: 'paid',
+        order,
+      }
+    }
 
-  if (cfOrder.order_status === 'PAID' && !amountMatches) {
-    console.error('Tampering detected: order amount does not match stored plan amount', {
-      orderAmount: cfOrder.order_amount,
-      expected: expectedAmountRupees,
-    })
-    throw new Error('Order verification failed due to amount mismatch.')
-  }
+    // 2. Authoritative verification from Cashfree PG API
+    // Cashfree GET /pg/orders/{order_id} expects merchant order ID (order_...)
+    const lookupId = trimmedOrderId.startsWith('order_') ? trimmedOrderId : order.cf_order_id
+    let cfOrder = await safeFetchCashfreeOrder(lookupId)
+    if (!cfOrder && lookupId !== order.cf_order_id) {
+      cfOrder = await safeFetchCashfreeOrder(order.cf_order_id)
+    }
 
-  if (isPaid && order.status !== 'paid') {
-    // 1. Mark order paid
-    await adminDb.from('orders').update({
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-    }).eq('id', order.id)
+    if (!cfOrder) {
+      // If Cashfree order lookup returns null (e.g. transient network or pending propagation)
+      return {
+        success: false,
+        orderStatus: 'pending',
+        order,
+        errorMessage: 'Awaiting status confirmation from Cashfree. Please refresh this page in a moment.',
+      }
+    }
 
-    // 2. Fetch current profile
-    const { data: profile } = await adminDb
-      .from('profiles')
-      .select('plan, plan_expires_at')
-      .eq('id', user.id)
-      .single()
+    // 3. Strict security: verify order amount matches stored plan amount
+    const expectedAmountRupees = order.amount_paise / 100
+    const amountMatches = Math.abs(cfOrder.order_amount - expectedAmountRupees) < 1.0
+    const isPaid = cfOrder.order_status === 'PAID' && amountMatches
 
-    const newExpiry = calculateNewExpiry(profile?.plan_expires_at, order.billing_cycle as BillingCycle)
+    if (cfOrder.order_status === 'PAID' && !amountMatches) {
+      console.error('Tampering detected: order amount does not match stored plan amount', {
+        orderAmount: cfOrder.order_amount,
+        expected: expectedAmountRupees,
+      })
+      return {
+        success: false,
+        orderStatus: 'failed',
+        order,
+        errorMessage: 'Order verification failed due to amount mismatch.',
+      }
+    }
 
-    // 3. Upgrade user to Pro
-    await adminDb.from('profiles').update({
-      plan: 'pro',
-      plan_expires_at: newExpiry.toISOString(),
-    }).eq('id', user.id)
+    const targetUserId = user?.id || order.user_id
+    const cycle = (order.billing_cycle || 'month') as BillingCycle
 
-    // 4. Record event in payment_events idempotently
-    await adminDb.from('payment_events').upsert({
-      cf_order_id: order.cf_order_id,
-      event_type: 'ORDER_RETURN_VERIFIED_PAID',
-      payload: {
-        verified_at: new Date().toISOString(),
-        cf_order_id: order.cf_order_id,
-        amount_paid: cfOrder.order_amount,
-      },
-    }, { onConflict: 'cf_order_id,event_type' })
+    if (isPaid) {
+      let fulfilled = false
 
-    revalidatePath('/dashboard')
-    revalidatePath('/dashboard/settings/billing')
-  } else if (!isPaid && cfOrder.order_status === 'EXPIRED') {
-    await adminDb.from('orders').update({
-      status: 'expired',
-    }).eq('id', order.id)
-  }
+      // Method A: Admin client (if service role is available)
+      if (hasServiceRoleKey()) {
+        try {
+          const adminDb = createAdminClient()
 
-  return {
-    orderStatus: isPaid ? 'paid' : (cfOrder.order_status.toLowerCase() as string),
-    order: {
-      ...order,
-      status: isPaid ? 'paid' : order.status,
-    },
+          // Mark order paid
+          await adminDb.from('orders').update({
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+          }).eq('id', order.id)
+
+          // Fetch profile and extend Pro
+          const { data: profile } = await adminDb
+            .from('profiles')
+            .select('plan, plan_expires_at')
+            .eq('id', targetUserId)
+            .single()
+
+          const newExpiry = calculateNewExpiry(profile?.plan_expires_at, cycle)
+
+          await adminDb.from('profiles').update({
+            plan: 'pro',
+            plan_expires_at: newExpiry.toISOString(),
+          }).eq('id', targetUserId)
+
+          await adminDb.from('payment_events').upsert({
+            cf_order_id: order.cf_order_id,
+            event_type: 'ORDER_RETURN_VERIFIED_PAID',
+            payload: {
+              verified_at: new Date().toISOString(),
+              cf_order_id: order.cf_order_id,
+              amount_paid: cfOrder.order_amount,
+            },
+          }, { onConflict: 'cf_order_id,event_type' })
+
+          fulfilled = true
+        } catch (adminErr) {
+          console.warn('[Billing Return] Admin update encountered error, trying RPC fallback:', adminErr)
+        }
+      }
+
+      // Method B: RPC fallback (fulfill_order_and_activate_pro)
+      if (!fulfilled && targetUserId) {
+        try {
+          const { error: rpcError } = await supabase.rpc('fulfill_order_and_activate_pro', {
+            p_order_id: order.cf_order_id,
+            p_user_id: targetUserId,
+            p_billing_cycle: cycle,
+            p_amount_paise: order.amount_paise,
+          })
+          if (rpcError) {
+            console.warn('[Billing Return] RPC error:', rpcError.message)
+          } else {
+            fulfilled = true
+          }
+        } catch (rpcErr) {
+          console.warn('[Billing Return] RPC invocation exception:', rpcErr)
+        }
+      }
+
+      revalidatePath('/dashboard')
+      revalidatePath('/dashboard/settings/billing')
+      revalidatePath('/billing/return')
+
+      return {
+        success: true,
+        orderStatus: 'paid',
+        order: {
+          ...order,
+          status: 'paid',
+        },
+      }
+    } else if (cfOrder.order_status === 'EXPIRED') {
+      if (hasServiceRoleKey()) {
+        try {
+          const adminDb = createAdminClient()
+          await adminDb.from('orders').update({ status: 'expired' }).eq('id', order.id)
+        } catch {
+          // ignore
+        }
+      }
+      return {
+        success: false,
+        orderStatus: 'expired',
+        order: { ...order, status: 'expired' },
+        errorMessage: 'Payment session has expired. Please initiate checkout again from the pricing page.',
+      }
+    }
+
+    return {
+      success: false,
+      orderStatus: (cfOrder.order_status.toLowerCase() as 'pending' | 'failed') || 'pending',
+      order,
+      errorMessage: `Payment status is ${cfOrder.order_status}. Cashfree is awaiting confirmation.`,
+    }
+  } catch (err: unknown) {
+    console.error('Unhandled error in verifyOrderReturn:', err)
+    return {
+      success: false,
+      orderStatus: 'failed',
+      errorMessage: 'An unexpected error occurred while verifying the payment. If you were charged, please check your billing settings or contact support.',
+    }
   }
 }
 

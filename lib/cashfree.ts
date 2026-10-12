@@ -200,6 +200,18 @@ export async function fetchCashfreeOrder(orderId: string): Promise<CashfreeFetch
 }
 
 /**
+ * Safely fetch authoritative order details from Cashfree, returning null if not found or on error.
+ */
+export async function safeFetchCashfreeOrder(orderId: string): Promise<CashfreeFetchOrderResponse | null> {
+  try {
+    return await fetchCashfreeOrder(orderId);
+  } catch (err: unknown) {
+    console.warn(`[Cashfree] Safe fetch order returned null for order ID ${orderId}:`, (err as Error)?.message);
+    return null;
+  }
+}
+
+/**
  * Verify Cashfree Webhook Signature.
  * Cashfree computes Base64(HMAC_SHA256(timestamp + rawBody, secretKey)).
  * Also validates timestamp within tolerance window (default 5 minutes).

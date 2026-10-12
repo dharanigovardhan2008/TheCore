@@ -77,11 +77,14 @@ export async function POST(req: NextRequest) {
 
     // 4. Handle PAYMENT_SUCCESS_WEBHOOK
     if (eventType === 'PAYMENT_SUCCESS_WEBHOOK' || eventType === 'ORDER_PAID_SUCCESS') {
-      // Fetch stored order
+      // Fetch stored order safely without triggering UUID cast exceptions
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+      const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
+
       const { data: dbOrder } = await adminDb
         .from('orders')
         .select('*')
-        .or(`cf_order_id.eq.${orderId},id.eq.${orderId}`)
+        .or(orderFilter)
         .maybeSingle();
 
       if (!dbOrder) {
@@ -124,10 +127,13 @@ export async function POST(req: NextRequest) {
       }
     } else if (eventType === 'REFUND_SUCCESS_WEBHOOK') {
       // Handle refund: mark order as failed / refunded
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+      const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
+
       const { data: dbOrder } = await adminDb
         .from('orders')
         .select('*')
-        .or(`cf_order_id.eq.${orderId},id.eq.${orderId}`)
+        .or(orderFilter)
         .maybeSingle();
 
       if (dbOrder) {
@@ -146,10 +152,13 @@ export async function POST(req: NextRequest) {
       eventType === 'PAYMENT_USER_DROPPED_WEBHOOK' ||
       eventType === 'ORDER_TERMINATED_WEBHOOK'
     ) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+      const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
+
       const { data: dbOrder } = await adminDb
         .from('orders')
         .select('*')
-        .or(`cf_order_id.eq.${orderId},id.eq.${orderId}`)
+        .or(orderFilter)
         .maybeSingle();
 
       if (dbOrder && dbOrder.status === 'created') {
