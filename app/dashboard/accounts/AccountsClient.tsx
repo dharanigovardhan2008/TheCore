@@ -53,23 +53,22 @@ export default function AccountsClient({ projects, services }: AccountsClientPro
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-left">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">Accounts & Logins</h1>
-        <p className="text-sm sm:text-base text-[var(--text-secondary)] mt-1">All your platform logins organized by email address.</p>
-      </div>
-
       {grouped.map((group) => (
-        <section key={group.email} className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-4 sm:p-6 lg:p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium">
-          <div className="mb-4 sm:mb-6 flex items-center gap-3 border-b border-[var(--border-light)] pb-4 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-[var(--bg-surface-tint)] flex items-center justify-center text-[var(--color-primary)] shadow-xs shrink-0">
-              <Mail className="h-5 w-5" />
+        <section key={group.email} className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-4 sm:p-6 lg:p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium overflow-hidden">
+          <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-[var(--border-light)] pb-4 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[var(--bg-surface-tint)] flex items-center justify-center text-[var(--color-primary)] shadow-xs shrink-0">
+                <Mail className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+              </div>
+              <h2 className="text-sm sm:text-lg font-bold text-[var(--text-primary)] break-all min-w-0 flex-1 select-all" title={group.email}>
+                {group.email}
+              </h2>
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] truncate min-w-0 flex-1" title={group.email}>
-              {group.email}
-            </h2>
-            <span className="shrink-0 text-xs font-bold bg-[var(--bg-surface-tint)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full shadow-xs border border-[var(--border-light)] whitespace-nowrap">
-              {group.services.length} {group.services.length === 1 ? 'account' : 'accounts'}
-            </span>
+            <div className="flex items-center self-start sm:self-auto shrink-0 pl-12 sm:pl-0">
+              <span className="text-xs font-bold bg-[var(--bg-surface-tint)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full shadow-xs border border-[var(--border-light)] whitespace-nowrap">
+                {group.services.length} {group.services.length === 1 ? 'account' : 'accounts'}
+              </span>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">

@@ -277,22 +277,22 @@ export default function ProjectDetailClient({ project }: Props) {
            
            <div className="space-y-3 mb-6">
               {services.map(service => (
-                <div key={service.id} className="flex items-center justify-between p-3.5 sm:p-4 glass border border-[var(--border-light)] rounded-2xl gap-3 transition-premium shadow-xs">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <PlatformLogo tech={service.platform} className="!w-9 !h-9 !p-1 shrink-0 rounded-xl shadow-xs" />
+                <div key={service.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 glass border border-[var(--border-light)] rounded-2xl gap-3 transition-premium shadow-xs">
+                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                    <PlatformLogo tech={service.platform} className="!w-9 !h-9 !p-1 shrink-0 rounded-xl shadow-xs mt-0.5 sm:mt-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm sm:text-base font-bold text-[var(--text-primary)] truncate">{service.platform}</span>
+                        <span className="text-sm sm:text-base font-bold text-[var(--text-primary)]">{service.platform}</span>
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[var(--bg-page)] rounded-md text-[var(--text-secondary)] border border-[var(--border-light)] shrink-0">
                           {service.kind === 'other' && service.custom_kind ? service.custom_kind : service.kind}
                         </span>
                       </div>
-                      <p className="text-xs sm:text-sm text-[var(--text-secondary)] truncate font-medium mt-0.5" title={service.login_email}>
+                      <p className="text-xs sm:text-sm text-[var(--text-secondary)] font-medium mt-1 break-all select-all">
                         {service.login_email}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 self-end sm:self-center shrink-0">
                     <button onClick={() => copyToClipboard(service.login_email)} className="w-8 h-8 sm:w-9 sm:h-9 bg-[var(--bg-page)] rounded-full text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] transition-colors flex items-center justify-center shadow-xs" title="Copy email">
                       <Copy className="w-4 h-4 stroke-[2]" />
                     </button>
@@ -309,11 +309,12 @@ export default function ProjectDetailClient({ project }: Props) {
               )}
            </div>
 
-          <form onSubmit={handleAddService} className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full glass p-3 rounded-2xl border border-[var(--border-light)]">
+          <form onSubmit={handleAddService} className="flex flex-col gap-3 w-full bg-[var(--bg-page)]/80 p-3.5 sm:p-4 rounded-2xl border border-[var(--border-light)] shadow-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               <select
                 value={newServiceKind}
                 onChange={(e) => setNewServiceKind(e.target.value)}
-                className="h-10 text-sm font-medium bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3 outline-none w-full sm:w-auto shadow-xs"
+                className="h-11 text-sm font-medium bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3 outline-none w-full shadow-xs focus:ring-2 focus:ring-blue-500/20"
               >
                 <option value="hosting">Hosting</option>
                 <option value="database">Database</option>
@@ -326,7 +327,7 @@ export default function ProjectDetailClient({ project }: Props) {
                 value={newPlatform}
                 onChange={(e) => setNewPlatform(e.target.value)}
                 placeholder="Platform (e.g. Vercel)"
-                className="h-10 text-sm bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 outline-none flex-1 w-full shadow-xs font-medium"
+                className="h-11 text-sm bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 outline-none w-full shadow-xs font-medium"
               />
               <input
                 type="email"
@@ -336,16 +337,17 @@ export default function ProjectDetailClient({ project }: Props) {
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="Login Email"
-                className="h-10 text-sm bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 outline-none flex-1 w-full shadow-xs font-medium"
+                className="h-11 text-sm bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 outline-none w-full shadow-xs font-medium"
               />
-              <button 
-                type="submit" 
-                disabled={isAddingService || !newPlatform.trim() || !newEmail.trim()}
-                className="h-10 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl disabled:opacity-50 text-sm font-bold whitespace-nowrap shadow-xs transition-colors shrink-0"
-              >
-                Add
-              </button>
-             </form>
+            </div>
+            <button 
+              type="submit" 
+              disabled={isAddingService || !newPlatform.trim() || !newEmail.trim()}
+              className="h-11 w-full bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:opacity-90 active:scale-98 text-white px-5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-2"
+            >
+              Add Platform
+            </button>
+          </form>
         </div>
         
         {/* EnvVault Card */}
