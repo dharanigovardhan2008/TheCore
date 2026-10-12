@@ -74,4 +74,3 @@ test.describe('Axe and Screenshots', () => {
     });
   }
 });
-

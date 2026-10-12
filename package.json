@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx tests/test-crypto.ts && tsx tests/test-auth-and-terms.ts",
+    "test:e2e": "playwright test tests/e2e.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
