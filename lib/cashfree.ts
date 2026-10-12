@@ -5,6 +5,7 @@ export interface CreateOrderParams {
   amountInRupees: number;
   customerId: string;
   customerEmail: string;
+  customerName?: string;
   customerPhone?: string;
   returnUrl: string;
   orderNote?: string;
@@ -30,6 +31,25 @@ export interface CashfreeFetchOrderResponse {
 }
 
 const CASHFREE_API_VERSION = '2023-08-01';
+
+/**
+ * Redact sensitive fields (secrets, keys, tokens, signatures) from log objects.
+ */
+function sanitizeForLogging(data: unknown): unknown {
+  if (typeof data !== 'object' || data === null) return data;
+  if (Array.isArray(data)) return data.map(sanitizeForLogging);
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(data as Record<string, unknown>)) {
+    if (/secret|token|password|auth|signature|key/i.test(key) && typeof val === 'string') {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof val === 'object' && val !== null) {
+      sanitized[key] = sanitizeForLogging(val);
+    } else {
+      sanitized[key] = val;
+    }
+  }
+  return sanitized;
+}
 
 export function getCashfreeBaseUrl(): string {
   const env = (process.env.CASHFREE_ENV || 'sandbox').toLowerCase();
@@ -62,10 +82,10 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
   const { appId, secretKey } = getCredentials();
   const baseUrl = getCashfreeBaseUrl();
 
-  // Cashfree requires a valid customer phone (10 digits). Default to fallback if absent.
+  // Cashfree requires a valid customer phone (10 digits). Default to standard valid test number if absent.
   const phone = params.customerPhone && /^\d{10}$/.test(params.customerPhone)
     ? params.customerPhone
-    : '9999999999';
+    : '9876543210';
 
   const body = {
     order_id: params.orderId,
@@ -73,6 +93,7 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
     order_currency: 'INR',
     customer_details: {
       customer_id: params.customerId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50),
+      customer_name: params.customerName || 'Subscriber',
       customer_email: params.customerEmail,
       customer_phone: phone,
     },
@@ -106,13 +127,27 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
     body: JSON.stringify(body),
   });
 
+  const requestIdHeader = response.headers.get('x-request-id') || response.headers.get('cf-ray') || 'none';
+
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Cashfree Create Order Error:', errorText);
+    let sanitizedError = errorText;
+    try {
+      sanitizedError = JSON.stringify(sanitizeForLogging(JSON.parse(errorText)));
+    } catch {
+      sanitizedError = errorText.replace(/(key|secret|token|pass)=\w+/gi, '$1=REDACTED');
+    }
+    console.error(
+      `[Cashfree Create Order Failed] Order ID: ${params.orderId}, Status: ${response.status} ${response.statusText}, Request ID: ${requestIdHeader}, Error: ${sanitizedError}`
+    );
     throw new Error(`Failed to create Cashfree order: ${response.status} ${response.statusText}`);
   }
 
-  return await response.json();
+  const result = (await response.json()) as CashfreeOrderResponse;
+  console.log(
+    `[Cashfree Create Order Success] Order ID: ${params.orderId}, CF Order ID: ${result.cf_order_id}, Status: ${response.status}, Request ID: ${requestIdHeader}`
+  );
+  return result;
 }
 
 /**
@@ -141,13 +176,27 @@ export async function fetchCashfreeOrder(orderId: string): Promise<CashfreeFetch
     },
   });
 
+  const requestIdHeader = response.headers.get('x-request-id') || response.headers.get('cf-ray') || 'none';
+
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Cashfree Fetch Order Error:', errorText);
+    let sanitizedError = errorText;
+    try {
+      sanitizedError = JSON.stringify(sanitizeForLogging(JSON.parse(errorText)));
+    } catch {
+      sanitizedError = errorText.replace(/(key|secret|token|pass)=\w+/gi, '$1=REDACTED');
+    }
+    console.error(
+      `[Cashfree Fetch Order Failed] Order ID: ${orderId}, Status: ${response.status} ${response.statusText}, Request ID: ${requestIdHeader}, Error: ${sanitizedError}`
+    );
     throw new Error(`Failed to fetch Cashfree order: ${response.status} ${response.statusText}`);
   }
 
-  return await response.json();
+  const result = (await response.json()) as CashfreeFetchOrderResponse;
+  console.log(
+    `[Cashfree Fetch Order Success] Order ID: ${orderId}, Status: ${response.status}, Order Status: ${result.order_status}, Request ID: ${requestIdHeader}`
+  );
+  return result;
 }
 
 /**

@@ -727,24 +727,29 @@ export async function createCheckoutSession(cycle: BillingCycle) {
   const orderId = `order_${user.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}_${Date.now()}_${uniqueSuffix}`
   const returnUrl = `${siteUrl}/billing/return?order_id=${orderId}`
 
+  const customerName = user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Subscriber'
+  const customerPhone = user.user_metadata?.phone || (user as { phone?: string }).phone || '9876543210'
+
   const cfOrder = await createCashfreeOrder({
     orderId,
     amountInRupees: amountRupees,
     customerId: user.id,
+    customerName,
     customerEmail: user.email || 'user@thecore.indevs.in',
+    customerPhone,
     returnUrl,
     orderNote: `TheCore Pro Subscription (${cycle === 'year' ? '12 Months' : '1 Month'})`,
   })
 
   // Store created order in database:
-  // Uses adminDb when SUPABASE_SERVICE_ROLE_KEY is present, with fallback to authenticated user client.
+  // Store orderId as cf_order_id so return_url query parameter and webhooks match reliably
   const orderRecord = {
     user_id: user.id,
     plan_id: 'pro',
     billing_cycle: cycle,
     amount_paise: amountPaise,
     currency: 'INR',
-    cf_order_id: cfOrder.cf_order_id || orderId,
+    cf_order_id: orderId,
     cf_payment_session_id: cfOrder.payment_session_id,
     status: 'created',
   };
@@ -776,12 +781,16 @@ export async function createCheckoutSession(cycle: BillingCycle) {
     throw new Error(`Failed to initialize subscription order: ${dbError.message || 'Database error'}${hint}`);
   }
 
+  const rawEnv = (process.env.CASHFREE_ENV || 'sandbox').toLowerCase()
+  const environment: 'production' | 'sandbox' = (rawEnv === 'production' || rawEnv === 'prod') ? 'production' : 'sandbox'
+
   return {
     orderId,
     cfOrderId: cfOrder.cf_order_id,
     paymentSessionId: cfOrder.payment_session_id,
     amountRupees,
-    environment: (process.env.CASHFREE_ENV || 'sandbox').toLowerCase(),
+    environment,
+    returnUrl,
   }
 }
 
@@ -798,11 +807,16 @@ export async function verifyOrderReturn(orderId: string) {
   const adminDb = createAdminClient()
 
   // 1. Look up order with user client first (RLS safe) or adminDb
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
+  const filterClause = isUuid
+    ? `cf_order_id.eq.${orderId},id.eq.${orderId},cf_payment_session_id.eq.${orderId}`
+    : `cf_order_id.eq.${orderId},cf_payment_session_id.eq.${orderId}`
+
   let order = null
   const { data: userOrder } = await supabase
     .from('orders')
     .select('*')
-    .or(`cf_order_id.eq.${orderId},id.eq.${orderId}`)
+    .or(filterClause)
     .eq('user_id', user.id)
     .maybeSingle()
 
@@ -812,7 +826,7 @@ export async function verifyOrderReturn(orderId: string) {
     const { data: adminOrder } = await adminDb
       .from('orders')
       .select('*')
-      .or(`cf_order_id.eq.${orderId},id.eq.${orderId}`)
+      .or(filterClause)
       .eq('user_id', user.id)
       .maybeSingle()
     order = adminOrder

@@ -8,7 +8,11 @@ import { PLANS, BillingCycle } from '@/lib/plans';
 import { createCheckoutSession } from '@/app/dashboard/actions';
 
 interface CashfreeSDKInstance {
-  checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<void>;
+  checkout: (opts: { 
+    paymentSessionId: string; 
+    redirectTarget?: string;
+    returnUrl?: string;
+  }) => Promise<{ error?: { message: string; code?: string; type?: string }; redirect?: boolean }>;
 }
 
 type CashfreeInit = (opts: { mode: 'production' | 'sandbox' }) => CashfreeSDKInstance;
@@ -74,10 +78,18 @@ export default function PricingClient({
 
       try {
         const cashfree = await loadCashfreeSdk();
-        await cashfree.checkout({
+        const checkoutResult = await cashfree.checkout({
           paymentSessionId: session.paymentSessionId,
           redirectTarget: '_self',
+          returnUrl: session.returnUrl,
         });
+
+        if (checkoutResult?.error) {
+          console.warn('[Cashfree Checkout SDK Error]:', checkoutResult.error);
+          setErrorMsg(checkoutResult.error.message || 'Payment initialization cancelled or failed.');
+          setLoading(false);
+          return;
+        }
       } catch (sdkErr: unknown) {
         console.warn('Direct Cashfree SDK checkout warning:', (sdkErr as Error)?.message);
         // Fallback directly to return URL for verification
