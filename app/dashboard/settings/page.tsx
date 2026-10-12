@@ -14,9 +14,5 @@ export default async function SettingsPage() {
     name: user?.user_metadata?.name || user?.user_metadata?.full_name || ''
   };
 
-  return (
-    <div className="min-h-screen bg-page py-8">
-      <SettingsClient user={userObj} />
-    </div>
-  );
+  return <SettingsClient user={userObj} />;
 }

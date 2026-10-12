@@ -52,48 +52,50 @@ export default function AccountsClient({ projects, services }: AccountsClientPro
   }
 
   return (
-    <div className="space-y-12 max-w-4xl mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-10 text-center sm:text-left">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)] tracking-tight">Accounts & Logins</h1>
-        <p className="text-[var(--text-secondary)] mt-2">All your platform logins organized by email address.</p>
+    <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-left">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">Accounts & Logins</h1>
+        <p className="text-sm sm:text-base text-[var(--text-secondary)] mt-1">All your platform logins organized by email address.</p>
       </div>
 
       {grouped.map((group) => (
-        <section key={group.email} className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-6 sm:p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium">
-          <div className="mb-6 flex items-center gap-3 border-b border-[var(--border-light)] pb-4">
-            <div className="w-10 h-10 rounded-xl bg-[var(--bg-surface-tint)] flex items-center justify-center text-[var(--color-primary)] shadow-sm">
+        <section key={group.email} className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-4 sm:p-6 lg:p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium">
+          <div className="mb-4 sm:mb-6 flex items-center gap-3 border-b border-[var(--border-light)] pb-4 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--bg-surface-tint)] flex items-center justify-center text-[var(--color-primary)] shadow-xs shrink-0">
               <Mail className="h-5 w-5" />
             </div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)]">{group.email}</h2>
-            <span className="ml-auto text-xs font-bold bg-[var(--bg-surface-tint)] text-[var(--text-secondary)] px-3 py-1 rounded-full shadow-sm border border-[var(--border-light)]">
+            <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] truncate min-w-0 flex-1" title={group.email}>
+              {group.email}
+            </h2>
+            <span className="shrink-0 text-xs font-bold bg-[var(--bg-surface-tint)] text-[var(--text-secondary)] px-2.5 py-1 rounded-full shadow-xs border border-[var(--border-light)] whitespace-nowrap">
               {group.services.length} {group.services.length === 1 ? 'account' : 'accounts'}
             </span>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {group.services.map((service) => (
               <div 
                 key={service.id} 
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-[var(--bg-page)] rounded-[var(--radius-card)] border border-[var(--border-light)] hover:border-[var(--color-primary)] transition-premium group shadow-sm"
+                className="flex items-center justify-between gap-3 p-3.5 sm:p-4 bg-[var(--bg-page)] rounded-2xl border border-[var(--border-light)] hover:border-[var(--color-primary)] transition-premium group shadow-xs"
               >
-                <div className="flex items-center gap-4">
-                  <PlatformLogo tech={service.platform} className="!w-12 !h-12 !rounded-xl shadow-sm border border-[var(--border-light)]" />
-                  <div>
-                    <p className="font-bold text-[16px] text-[var(--text-primary)] leading-tight">{service.platform}</p>
-                    <p className="text-[12px] font-medium text-[var(--text-tertiary)] capitalize mt-1 tracking-wide">{service.kind} Service</p>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <PlatformLogo tech={service.platform} className="!w-10 !h-10 !rounded-xl shadow-xs border border-[var(--border-light)] shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm sm:text-base text-[var(--text-primary)] leading-tight truncate">{service.platform}</p>
+                    <p className="text-xs font-medium text-[var(--text-tertiary)] capitalize mt-0.5 truncate">{service.kind} Service</p>
                   </div>
                 </div>
 
                 {service.project && (
                   <Link 
-                    href={`/dashboard/projects/${service.project.id}`}
-                    className="inline-flex items-center gap-2 px-3 py-2 sm:p-0 sm:w-10 sm:h-10 sm:justify-center rounded-lg sm:rounded-full bg-[var(--bg-surface)] border border-[var(--border-light)] text-[var(--text-tertiary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] hover:border-[var(--color-primary)] transition-premium shadow-sm group-hover:scale-105"
+                    href={`/dashboard/${service.project.id}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--bg-surface)] border border-[var(--border-light)] text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] hover:border-[var(--color-primary)] transition-premium shadow-xs shrink-0"
                     title={`View ${service.project.name}`}
                   >
-                    <span className="sm:hidden text-xs font-semibold text-[var(--text-secondary)] group-hover:text-[var(--color-primary)]">
+                    <span className="text-xs font-semibold max-w-[100px] sm:max-w-[140px] truncate">
                       {service.project.name}
                     </span>
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                   </Link>
                 )}
               </div>

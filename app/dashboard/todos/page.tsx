@@ -8,11 +8,5 @@ export default async function TodosPage() {
     getProjects(),
   ]);
 
-  return (
-    <main className="flex-1 overflow-auto bg-page">
-      <div className="max-w-[1200px] mx-auto p-8">
-        <TodosClient initialTodos={todos} projects={projects} />
-      </div>
-    </main>
-  );
+  return <TodosClient initialTodos={todos} projects={projects} />;
 }

@@ -223,75 +223,71 @@ export default function TodosClient({ initialTodos, projects }: TodosClientProps
           </div>
         )}
 
-        <div className="flex flex-row items-center justify-between gap-4">
+        <div className="flex flex-row items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] truncate">To-dos</h1>
-            <p className="text-[var(--text-secondary)] mt-1 truncate">Manage your tasks across projects.</p>
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 sm:mt-1 truncate">Manage your tasks across projects.</p>
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white rounded-full font-semibold shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium"
-          >
-            <Plus className="w-4 h-4" />
-            Add to-do
-          </button>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="sm:hidden flex shrink-0 items-center justify-center w-12 h-12 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white rounded-full shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium"
+            className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white rounded-full font-semibold shadow-xs sm:shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium text-xs sm:text-sm shrink-0"
             aria-label="Add to-do"
           >
-            <Plus className="w-6 h-6 stroke-[2.5]" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Add to-do</span>
           </button>
         </div>
 
         {/* Quick Add Bar */}
-        <form onSubmit={handleQuickAdd} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 bg-surface p-2 rounded-[var(--radius-card)] shadow-[var(--shadow-card-soft)] border border-[var(--border-light)]">
+        <form onSubmit={handleQuickAdd} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 bg-surface p-2.5 sm:p-2 rounded-2xl sm:rounded-[var(--radius-card)] shadow-xs sm:shadow-[var(--shadow-card-soft)] border border-[var(--border-light)]">
           <input 
             ref={quickAddInputRef}
             type="text"
             value={quickAddText}
             onChange={e => setQuickAddText(e.target.value)}
             placeholder="Add a to-do and press Enter"
-            className="flex-1 min-w-[200px] bg-page border border-surface-tint rounded-[var(--radius-btn)] px-4 py-2 text-sm text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700"
+            className="flex-1 min-w-0 bg-page border border-surface-tint rounded-xl sm:rounded-[var(--radius-btn)] px-3.5 py-2 text-sm text-content focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
-          <select
-            value={quickAddProjectId}
-            onChange={e => setQuickAddProjectId(e.target.value)}
-            className="bg-page border border-surface-tint rounded-[var(--radius-btn)] px-3 py-2 text-sm text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700"
-          >
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          <select
-            value={quickAddPriority}
-            onChange={e => setQuickAddPriority(e.target.value as any)}
-            className="bg-page border border-surface-tint rounded-[var(--radius-btn)] px-3 py-2 text-sm text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700"
-          >
-            <option value="">Priority</option>
-            <option value="low">Low</option>
-            <option value="med">Medium</option>
-            <option value="high">High</option>
-          </select>
-          <button 
-            type="submit"
-            disabled={!quickAddText.trim()}
-            className="px-4 py-2 bg-accent-primary text-white rounded-[var(--radius-btn)] text-sm font-medium hover:opacity-90 disabled:opacity-50"
-          >
-            Add
-          </button>
+          <div className="grid grid-cols-[1fr_1fr_auto] sm:flex sm:items-center gap-2">
+            <select
+              value={quickAddProjectId}
+              onChange={e => setQuickAddProjectId(e.target.value)}
+              className="bg-page border border-surface-tint rounded-xl sm:rounded-[var(--radius-btn)] px-2.5 py-2 text-xs sm:text-sm text-content focus:outline-none focus:ring-2 focus:ring-blue-500/20 truncate"
+            >
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <select
+              value={quickAddPriority}
+              onChange={e => setQuickAddPriority(e.target.value as any)}
+              className="bg-page border border-surface-tint rounded-xl sm:rounded-[var(--radius-btn)] px-2.5 py-2 text-xs sm:text-sm text-content focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="">Priority</option>
+              <option value="low">Low</option>
+              <option value="med">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <button 
+              type="submit"
+              disabled={!quickAddText.trim()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl sm:rounded-[var(--radius-btn)] text-xs sm:text-sm font-semibold disabled:opacity-50 transition-colors shrink-0"
+            >
+              Add
+            </button>
+          </div>
         </form>
 
         {/* Filters Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
-          <div className="flex bg-surface border border-[var(--border-light)] p-1 rounded-[var(--radius-card)] shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 w-full">
+          <div className="flex bg-surface border border-[var(--border-light)] p-1 rounded-2xl shadow-xs">
             {(["all", "open", "done"] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={clsx(
-                  "flex-1 sm:flex-none px-4 py-1.5 rounded-[var(--radius-btn)] text-sm font-medium capitalize transition-premium text-center",
-                  filter === f ? "bg-[var(--bg-page)] text-[var(--color-primary)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  "flex-1 sm:flex-none px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium capitalize transition-all text-center",
+                  filter === f ? "bg-[var(--bg-page)] text-[var(--color-primary)] font-semibold shadow-xs" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 )}
               >
                 {f}
@@ -299,11 +295,11 @@ export default function TodosClient({ initialTodos, projects }: TodosClientProps
             ))}
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
             <select 
               value={projectFilter} 
               onChange={(e) => setProjectFilter(e.target.value)}
-              className="text-sm bg-surface border border-[var(--border-light)] rounded-[var(--radius-card)] px-3 py-2 outline-none text-[var(--text-primary)] min-w-[120px] focus:border-gray-400 shadow-sm"
+              className="text-xs sm:text-sm bg-surface border border-[var(--border-light)] rounded-xl px-2.5 py-2 outline-none text-[var(--text-primary)] w-full sm:min-w-[130px] shadow-xs"
             >
               <option value="all">All Projects</option>
               {projects.map(p => (
@@ -313,7 +309,7 @@ export default function TodosClient({ initialTodos, projects }: TodosClientProps
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-sm bg-surface border border-[var(--border-light)] rounded-[var(--radius-card)] px-3 py-2 outline-none text-[var(--text-primary)] min-w-[140px] focus:border-gray-400 shadow-sm"
+              className="text-xs sm:text-sm bg-surface border border-[var(--border-light)] rounded-xl px-2.5 py-2 outline-none text-[var(--text-primary)] w-full sm:min-w-[140px] shadow-xs"
             >
               <option value="due_date">Sort by Due Date</option>
               <option value="priority">Sort by Priority</option>

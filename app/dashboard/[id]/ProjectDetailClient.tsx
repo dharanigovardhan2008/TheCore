@@ -154,7 +154,7 @@ export default function ProjectDetailClient({ project }: Props) {
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8">
         
         {/* Details Card */}
-        <div className="lg:col-span-2 order-1 glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
+        <div className="lg:col-span-2 order-1 glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-4 sm:p-6 lg:p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
           {project.description && (
             <div className="mb-8">
               <h3 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">Description</h3>
@@ -225,7 +225,7 @@ export default function ProjectDetailClient({ project }: Props) {
         </div>
 
         {/* Notes Card */}
-        <div className="lg:col-span-2 order-3 glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both">
+        <div className="lg:col-span-2 order-3 glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-4 sm:p-6 lg:p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-[var(--text-primary)]">Notes</h2>
             {!isEditingNotes ? (
@@ -269,32 +269,34 @@ export default function ProjectDetailClient({ project }: Props) {
         </div>
         
         {/* Services Card */}
-        <div className="lg:col-span-2 order-4 glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
-           <div className="mb-6">
+        <div className="lg:col-span-2 order-4 glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-4 sm:p-6 lg:p-8 hover:shadow-[var(--shadow-card-hover)] transition-premium animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
+           <div className="mb-4 sm:mb-6">
              <h2 className="text-lg font-bold text-[var(--text-primary)] mb-1">Platforms & logins</h2>
              <p className="text-xs text-[var(--text-tertiary)] font-medium">Store only login emails here. Use a password manager for passwords.</p>
            </div>
            
            <div className="space-y-3 mb-6">
               {services.map(service => (
-                <div key={service.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 glass border border-[var(--border-light)] rounded-[var(--radius-btn)] gap-3 sm:gap-0 group hover:shadow-[var(--shadow-soft)] hover:bg-white/40 dark:hover:bg-black/40 transition-premium shadow-sm">
-                  <div className="flex items-start sm:items-center gap-4">
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 bg-[var(--bg-page)] rounded-md text-[var(--text-secondary)] border border-[var(--border-light)] shadow-sm shrink-0">
-                      {service.kind === 'other' && service.custom_kind ? service.custom_kind : service.kind}
-                    </span>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 flex-1 min-w-0">
-                      <div className="flex items-center gap-2.5">
-                        <PlatformLogo tech={service.platform} className="!w-5 !h-5 !p-0.5" />
-                        <span className="text-[15px] font-bold text-[var(--text-primary)]">{service.platform}</span>
+                <div key={service.id} className="flex items-center justify-between p-3.5 sm:p-4 glass border border-[var(--border-light)] rounded-2xl gap-3 transition-premium shadow-xs">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <PlatformLogo tech={service.platform} className="!w-9 !h-9 !p-1 shrink-0 rounded-xl shadow-xs" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm sm:text-base font-bold text-[var(--text-primary)] truncate">{service.platform}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[var(--bg-page)] rounded-md text-[var(--text-secondary)] border border-[var(--border-light)] shrink-0">
+                          {service.kind === 'other' && service.custom_kind ? service.custom_kind : service.kind}
+                        </span>
                       </div>
-                      <span className="text-[14px] text-[var(--text-secondary)] truncate font-medium">{service.login_email}</span>
+                      <p className="text-xs sm:text-sm text-[var(--text-secondary)] truncate font-medium mt-0.5" title={service.login_email}>
+                        {service.login_email}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-end shrink-0">
-                    <button onClick={() => copyToClipboard(service.login_email)} className="w-9 h-9 bg-[var(--bg-page)] rounded-full text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] transition-premium flex items-center justify-center shadow-sm" title="Copy email">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => copyToClipboard(service.login_email)} className="w-8 h-8 sm:w-9 sm:h-9 bg-[var(--bg-page)] rounded-full text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] transition-colors flex items-center justify-center shadow-xs" title="Copy email">
                       <Copy className="w-4 h-4 stroke-[2]" />
                     </button>
-                    <button onClick={() => handleDeleteService(service.id)} className="w-9 h-9 bg-[var(--bg-page)] rounded-full text-[var(--color-danger)] hover:text-white hover:bg-[var(--color-danger)] transition-premium flex items-center justify-center shadow-sm" title="Delete">
+                    <button onClick={() => handleDeleteService(service.id)} className="w-8 h-8 sm:w-9 sm:h-9 bg-[var(--bg-page)] rounded-full text-[var(--color-danger)] hover:bg-rose-50 flex items-center justify-center transition-colors shadow-xs" title="Delete">
                       <Trash2 className="w-4 h-4 stroke-[2]" />
                     </button>
                   </div>
@@ -307,11 +309,11 @@ export default function ProjectDetailClient({ project }: Props) {
               )}
            </div>
 
-          <form onSubmit={handleAddService} className="flex flex-col sm:flex-row gap-3 w-full glass p-3 rounded-[var(--radius-input)] border border-[var(--border-light)]">
+          <form onSubmit={handleAddService} className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full glass p-3 rounded-2xl border border-[var(--border-light)]">
               <select
                 value={newServiceKind}
                 onChange={(e) => setNewServiceKind(e.target.value)}
-                className="h-11 sm:h-10 text-[14px] font-medium bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-lg px-3 outline-none w-full sm:w-auto focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 shadow-sm transition-premium"
+                className="h-10 text-sm font-medium bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3 outline-none w-full sm:w-auto shadow-xs"
               >
                 <option value="hosting">Hosting</option>
                 <option value="database">Database</option>
@@ -324,7 +326,7 @@ export default function ProjectDetailClient({ project }: Props) {
                 value={newPlatform}
                 onChange={(e) => setNewPlatform(e.target.value)}
                 placeholder="Platform (e.g. Vercel)"
-                className="h-11 sm:h-10 text-[14px] bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-lg px-4 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 outline-none flex-1 w-full shadow-sm transition-premium font-medium"
+                className="h-10 text-sm bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 outline-none flex-1 w-full shadow-xs font-medium"
               />
               <input
                 type="email"
@@ -334,12 +336,12 @@ export default function ProjectDetailClient({ project }: Props) {
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="Login Email"
-                className="h-11 sm:h-10 text-[14px] bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-lg px-4 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 outline-none flex-1 w-full shadow-sm transition-premium font-medium"
+                className="h-10 text-sm bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-xl px-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 outline-none flex-1 w-full shadow-xs font-medium"
               />
               <button 
                 type="submit" 
                 disabled={isAddingService || !newPlatform.trim() || !newEmail.trim()}
-                className="h-11 sm:h-10 w-full sm:w-auto bg-[var(--text-primary)] hover:bg-[var(--color-primary)] text-white px-5 rounded-lg disabled:opacity-50 text-[14px] font-bold whitespace-nowrap shadow-sm transition-premium"
+                className="h-10 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl disabled:opacity-50 text-sm font-bold whitespace-nowrap shadow-xs transition-colors shrink-0"
               >
                 Add
               </button>
