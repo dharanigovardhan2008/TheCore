@@ -27,7 +27,7 @@ export default function Shell({ children, user }: { children: React.ReactNode, u
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-[100dvh] w-full authenticated-shell pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* Desktop Sidebar */}
       <Sidebar user={user} />
 

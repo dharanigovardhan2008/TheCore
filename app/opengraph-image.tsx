@@ -28,34 +28,9 @@ export default function OpenGraphImage() {
             display: 'flex',
             alignItems: 'center',
             marginBottom: '40px',
-            gap: '20px',
           }}
         >
-          <div style={{ position: 'relative', width: '80px', height: '80px', display: 'flex' }}>
-            <div
-              style={{
-                position: 'absolute',
-                top: '0px',
-                left: '0px',
-                width: '45px',
-                height: '58px',
-                backgroundColor: '#FB923C',
-                borderRadius: '16px',
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '0px',
-                right: '0px',
-                width: '54px',
-                height: '50px',
-                backgroundColor: '#4F46E5',
-                borderRadius: '16px',
-              }}
-            />
-          </div>
-          <span style={{ fontSize: '56px', fontWeight: '800', color: '#101828', letterSpacing: '-0.02em' }}>
+          <span style={{ fontSize: '56px', fontWeight: '800', color: '#101828', letterSpacing: '-0.03em' }}>
             TheCore
           </span>
         </div>

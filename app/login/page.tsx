@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
+import Brand from "@/components/ui/Brand";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -62,15 +64,22 @@ function LoginContent() {
         if (error) throw error;
         router.push("/dashboard");
       } else if (mode === "complete_google_signup") {
-        const { error } = await supabase.auth.updateUser({ 
+        const { data: updateData, error } = await supabase.auth.updateUser({ 
           password,
           data: { full_name: name }
         });
         if (error) throw error;
+        if (updateData?.user) {
+          await supabase.from('profiles').upsert({
+            id: updateData.user.id,
+            display_name: name,
+            terms_version: CURRENT_TERMS_VERSION,
+            terms_accepted_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+        }
         router.push("/dashboard");
       } else {
-
-        const { error } = await supabase.auth.signUp({ 
+        const { data: signUpData, error } = await supabase.auth.signUp({ 
           email, 
           password,
           options: {
@@ -80,6 +89,16 @@ function LoginContent() {
           }
         });
         if (error) throw error;
+
+        if (signUpData?.user) {
+          await supabase.from('profiles').upsert({
+            id: signUpData.user.id,
+            display_name: name,
+            terms_version: CURRENT_TERMS_VERSION,
+            terms_accepted_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+        }
+
         alert("Account created! (If email confirmation is enabled, please check your email).");
         if (!error) {
            router.push("/dashboard");
@@ -123,12 +142,11 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-page">
+    <div className="min-h-screen flex items-center justify-center p-4 gradient-bg">
       <div className="w-full max-w-md bg-surface p-8 rounded-[var(--radius-shell)] shadow-[var(--shadow-shell-soft)]">
         <div className="text-center mb-8">
-          <div className="mx-auto w-10 h-10 mb-4 relative">
-            <div className="absolute top-0 left-0 w-6 h-8 bg-accent-secondary rounded-[10px]" />
-            <div className="absolute bottom-0 right-0 w-8 h-6 bg-accent-primary rounded-[10px]" />
+          <div className="mb-4 flex justify-center">
+            <Brand size="lg" />
           </div>
           <h1 className="text-2xl font-bold text-content">Welcome to TheCore</h1>
           <p className="text-content-secondary mt-2 text-sm">

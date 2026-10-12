@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Brand from "@/components/ui/Brand";
 import { 
   LayoutDashboard, 
   FolderOpen, 
@@ -29,12 +30,9 @@ export default function Sidebar({ user }: { user?: { email: string, name: string
 
   return (
     <aside className="hidden lg:flex flex-col w-[260px] h-[calc(100vh-32px)] m-4 rounded-[var(--radius-panel)] glass shadow-[var(--shadow-soft)] overflow-hidden">
-      {/* Logo Area */}
-      <div className="flex items-center gap-3 px-6 py-8">
-        <div className="w-10 h-10 flex items-center justify-center">
-          <img src="/logo.png" alt="TheCore" className="w-full h-full object-contain drop-shadow-sm" />
-        </div>
-        <span className="font-bold text-xl tracking-tight text-[var(--text-primary)]">TheCore</span>
+      {/* Brand Header */}
+      <div className="flex items-center px-6 py-8">
+        <Brand size="lg" href="/dashboard" />
       </div>
 
       {/* Navigation */}

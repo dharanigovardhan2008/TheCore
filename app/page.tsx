@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import type { ElementType, ReactNode } from "react";
+import Brand from "@/components/ui/Brand";
+import { createClient } from "@/utils/supabase/server";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.isroot.in';
 
@@ -150,45 +152,6 @@ const faqs = [
       "Visit the Privacy Policy, Terms of Service, and Cookie Policy linked in the footer.",
   },
 ];
-
-function Brand({
-  compact = false,
-  inverse = false,
-}: {
-  compact?: boolean;
-  inverse?: boolean;
-}) {
-  return (
-    <Link
-      href="/"
-      aria-label="TheCore home"
-      className="inline-flex shrink-0 items-center gap-2.5"
-    >
-      <span
-        className={`relative block shrink-0 ${
-          compact ? "h-8 w-8" : "h-10 w-10"
-        }`}
-      >
-        <Image
-          src="/the-core-logo.png"
-          alt="TheCore logo"
-          fill
-          sizes={compact ? "32px" : "40px"}
-          className="object-contain"
-          priority
-        />
-      </span>
-
-      <span
-        className={`font-semibold tracking-[-0.055em] ${
-          compact ? "text-lg" : "text-xl"
-        } ${inverse ? "text-white" : "text-slate-950"}`}
-      >
-        TheCore
-      </span>
-    </Link>
-  );
-}
 
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
@@ -407,7 +370,10 @@ function WorkspacePreview() {
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -458,19 +424,30 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="hidden text-[13px] font-medium text-slate-600 transition hover:text-blue-700 sm:inline-flex"
-            >
-              Sign in
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex h-10 items-center gap-2 rounded-full bg-blue-600 px-5 text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
+              >
+                Open dashboard <ArrowUpRight size={15} />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden text-[13px] font-medium text-slate-600 transition hover:text-blue-700 sm:inline-flex"
+                >
+                  Log in
+                </Link>
 
-            <Link
-              href="/dashboard"
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
-            >
-              Enter TheCore <ArrowUpRight size={15} />
-            </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
+                >
+                  Get started free <ArrowUpRight size={15} />
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       </header>
@@ -898,16 +875,8 @@ export default function HomePage() {
           </div>
 
           <div className="relative mx-auto max-w-3xl">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] border border-white/25 bg-white/10 shadow-lg">
-              <span className="relative h-10 w-10">
-                <Image
-                  src="/the-core-logo.png"
-                  alt="TheCore logo"
-                  fill
-                  sizes="40px"
-                  className="object-contain"
-                />
-              </span>
+            <div className="mx-auto inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 py-2.5 shadow-lg">
+              <Brand inverse size="md" href="" />
             </div>
 
             <h2 className="mt-7 text-4xl font-semibold leading-tight tracking-[-0.06em] text-white sm:text-6xl">

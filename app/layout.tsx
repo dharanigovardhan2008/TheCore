@@ -39,6 +39,10 @@ export const metadata: Metadata = {
     title: "TheCore",
     description: "Keep track of all your side projects in one place.",
   },
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

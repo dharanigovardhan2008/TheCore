@@ -560,15 +560,28 @@ export async function acceptTerms(version: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
-    .update({
-      terms_version: version,
-      terms_accepted_at: new Date().toISOString()
-    })
-    .eq('id', user.id)
+    .upsert(
+      {
+        id: user.id,
+        terms_version: version,
+        terms_accepted_at: new Date().toISOString()
+      },
+      { onConflict: 'id' }
+    )
+    .select('terms_version')
+    .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Failed to update terms acceptance:', error)
+    throw error
+  }
+
+  if (data?.terms_version !== version) {
+    throw new Error('Terms version update mismatch')
+  }
   
   revalidatePath('/dashboard')
+  return { success: true }
 }
