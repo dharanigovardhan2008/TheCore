@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { projectPath } from '@/lib/routes'
 import {
   projectSchema,
@@ -697,7 +698,31 @@ export async function createCheckoutSession(cycle: BillingCycle) {
 
   const amountPaise = getPlanPriceInPaise('pro', cycle)
   const amountRupees = amountPaise / 100
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.indevs.in'
+
+  // Dynamically resolve siteUrl to match active deployed domain
+  let siteUrl = 'https://thecore.indevs.in'
+  try {
+    const headersList = await headers()
+    const host = headersList.get('x-forwarded-host') || headersList.get('host')
+    const proto = headersList.get('x-forwarded-proto') || 'https'
+    if (host && !host.includes('thecore.isroot.in')) {
+      siteUrl = `${proto}://${host}`
+    } else if (process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
+      const configured = process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/+$/, '')
+      if (!configured.includes('thecore.isroot.in')) {
+        siteUrl = configured
+      }
+    }
+  } catch {
+    if (process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
+      const configured = process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/+$/, '')
+      if (!configured.includes('thecore.isroot.in')) {
+        siteUrl = configured
+      }
+    }
+  }
+
+  siteUrl = siteUrl.replace(/\/+$/, '')
   const uniqueSuffix = Math.random().toString(36).substring(2, 8)
   const orderId = `order_${user.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}_${Date.now()}_${uniqueSuffix}`
   const returnUrl = `${siteUrl}/billing/return?order_id=${orderId}`
@@ -771,20 +796,47 @@ export async function verifyOrderReturn(orderId: string) {
   }
 
   const adminDb = createAdminClient()
-  const { data: order, error: orderError } = await adminDb
+
+  // 1. Look up order with user client first (RLS safe) or adminDb
+  let order = null
+  const { data: userOrder } = await supabase
     .from('orders')
     .select('*')
     .or(`cf_order_id.eq.${orderId},id.eq.${orderId}`)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
-  if (orderError || !order) {
+  order = userOrder
+
+  if (!order && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { data: adminOrder } = await adminDb
+      .from('orders')
+      .select('*')
+      .or(`cf_order_id.eq.${orderId},id.eq.${orderId}`)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    order = adminOrder
+  }
+
+  if (!order) {
     throw new Error('Order not found.')
   }
 
-  // Re-fetch authoritative status from Cashfree
+  // 2. Re-fetch authoritative status from Cashfree server-side API
   const cfOrder = await fetchCashfreeOrder(order.cf_order_id)
-  const isPaid = cfOrder.order_status === 'PAID'
+
+  // 3. Strict security: verify order amount matches stored plan amount
+  const expectedAmountRupees = order.amount_paise / 100
+  const amountMatches = Math.abs(cfOrder.order_amount - expectedAmountRupees) < 0.01
+  const isPaid = cfOrder.order_status === 'PAID' && amountMatches
+
+  if (cfOrder.order_status === 'PAID' && !amountMatches) {
+    console.error('Tampering detected: order amount does not match stored plan amount', {
+      orderAmount: cfOrder.order_amount,
+      expected: expectedAmountRupees,
+    })
+    throw new Error('Order verification failed due to amount mismatch.')
+  }
 
   if (isPaid && order.status !== 'paid') {
     // 1. Mark order paid
@@ -807,6 +859,17 @@ export async function verifyOrderReturn(orderId: string) {
       plan: 'pro',
       plan_expires_at: newExpiry.toISOString(),
     }).eq('id', user.id)
+
+    // 4. Record event in payment_events idempotently
+    await adminDb.from('payment_events').upsert({
+      cf_order_id: order.cf_order_id,
+      event_type: 'ORDER_RETURN_VERIFIED_PAID',
+      payload: {
+        verified_at: new Date().toISOString(),
+        cf_order_id: order.cf_order_id,
+        amount_paid: cfOrder.order_amount,
+      },
+    }, { onConflict: 'cf_order_id,event_type' })
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/settings/billing')
