@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@theme {
+  --color-page: var(--bg-page);
+  --color-surface: var(--bg-surface);
+  --color-surface-tint: var(--bg-surface-tint);
+  --color-elevated: var(--bg-elevated);
+  
+  --color-content: var(--text-primary);
+  --color-content-secondary: var(--text-secondary);
+  --color-content-hint: var(--text-tertiary);
+  
+  --color-accent-primary: var(--color-primary);
+  --color-accent-secondary: var(--color-warning);
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  /* BACKGROUND: pastel atmosphere */
+  --bg-page: #F8F7FF;
+  --bg-surface: #FFFFFF;
+  --bg-surface-tint: #F5F3FF;
+  --bg-elevated: #FFFFFF;
+  
+  /* COLORS */
+  --color-primary: #4F46E5; /* Indigo */
+  --color-primary-hover: #4338CA;
+  --color-primary-light: #EEF2FF;
+  --color-secondary: #E0E7FF; /* Lavender */
+  --color-accent: #FBCFE8; /* Soft pink */
+  
+  --color-success: #34D399; /* Mint */
+  --color-warning: #FB923C; /* Soft orange */
+  --color-danger: #F87171; /* Soft red */
+  
+  --color-project-blue: #DBEAFE;
+  --color-project-pink: #FCE7F3;
+  --color-project-orange: #FFEDD5;
+  --color-project-indigo: #E0E7FF;
+
+  /* TEXT: Deep navy */
+  --text-primary: #101828;
+  --text-secondary: #667085;
+  --text-tertiary: #98A2B3;
+  
+  /* BORDERS */
+  --border-light: rgba(70,80,160,0.08);
+  --border-color: #E2E8F0;
+  
+  /* RADII (Extremely rounded components) */
+  --radius-card: 28px;
+  --radius-panel: 32px;
+  --radius-modal: 30px;
+  --radius-input: 16px;
+  --radius-btn: 16px;
+  --radius-badge: 9999px;
+  
+  /* SHADOWS (Soft premium) */
+  --shadow-soft: 0 20px 60px rgba(70,80,160,0.08);
+  --shadow-sm: 0 4px 12px rgba(70,80,160,0.04);
+  --shadow-card-hover: 0 24px 64px rgba(70,80,160,0.12), 0 4px 12px rgba(70,80,160,0.06);
+  --shadow-card-soft: var(--shadow-soft);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-dm-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #ffffff;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: clip;
+  overflow-y: auto;
+}
+
+/* Glassmorphism helpers */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+}
+
+/* Smooth transitions */
+.transition-premium {
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+
+.gradient-bg {
+  background-image: url('/bg.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+
+
+/* Remove default focus outlines globally (the "violet outline boxes") */
+*:focus, *:focus-visible {
+  outline: none !important;
+  /* If tailwind forms is adding ring, disable it here */
+  --tw-ring-color: transparent !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  box-shadow: none !important;
+}
+
+
+.nav-link {
+  transition: color 180ms ease;
+}
+
+.nav-link:hover {
+  color: #1d4ed8;
+}
+
+::selection {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

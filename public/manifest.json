@@ -1,0 +1,17 @@
+{
+  "name": "TheCore",
+  "short_name": "TheCore",
+  "description": "Keep track of all your side projects in one place.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
+
