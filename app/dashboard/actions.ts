@@ -711,9 +711,9 @@ export async function createCheckoutSession(cycle: BillingCycle) {
     orderNote: `TheCore Pro Subscription (${cycle === 'year' ? '12 Months' : '1 Month'})`,
   })
 
-  // Store created order in database using server-only admin client
-  const adminDb = createAdminClient()
-  const { error: dbError } = await adminDb.from('orders').insert({
+  // Store created order in database:
+  // Uses adminDb when SUPABASE_SERVICE_ROLE_KEY is present, with fallback to authenticated user client.
+  const orderRecord = {
     user_id: user.id,
     plan_id: 'pro',
     billing_cycle: cycle,
@@ -722,11 +722,33 @@ export async function createCheckoutSession(cycle: BillingCycle) {
     cf_order_id: cfOrder.cf_order_id || orderId,
     cf_payment_session_id: cfOrder.payment_session_id,
     status: 'created',
-  })
+  };
+
+  let dbError = null;
+
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const adminDb = createAdminClient();
+    const { error } = await adminDb.from('orders').insert(orderRecord);
+    dbError = error;
+  } else {
+    const { error } = await supabase.from('orders').insert(orderRecord);
+    dbError = error;
+  }
+
+  // If service role insert failed, try user client as fallback
+  if (dbError && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { error: fallbackError } = await supabase.from('orders').insert(orderRecord);
+    if (!fallbackError) {
+      dbError = null;
+    }
+  }
 
   if (dbError) {
-    console.error('Failed to store order in database:', dbError)
-    throw new Error('Failed to initialize subscription order.')
+    console.error('Failed to store order in database:', dbError);
+    const hint = !process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? ' (Missing SUPABASE_SERVICE_ROLE_KEY in .env.local. Add it from Supabase Dashboard > Project Settings > API)'
+      : '';
+    throw new Error(`Failed to initialize subscription order: ${dbError.message || 'Database error'}${hint}`);
   }
 
   return {

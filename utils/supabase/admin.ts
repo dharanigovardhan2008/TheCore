@@ -14,10 +14,10 @@ export function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceRoleKey) {
-    // In development or test environments where service role key isn't configured,
-    // fallback to publishable key with a warning or throw in production
     if (process.env.NODE_ENV === 'production') {
       throw new Error('SUPABASE_SERVICE_ROLE_KEY is not defined in production environment.');
+    } else {
+      console.warn('[Supabase Admin] SUPABASE_SERVICE_ROLE_KEY is not defined in .env.local. Add it from Supabase Dashboard > Project Settings > API for full admin and webhook bypass capabilities.');
     }
   }
 

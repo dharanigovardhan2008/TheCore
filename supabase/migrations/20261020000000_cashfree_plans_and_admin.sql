@@ -112,7 +112,7 @@ alter table public.orders enable row level security;
 alter table public.payment_events enable row level security;
 alter table public.admin_audit_log enable row level security;
 
--- 7. Policies for orders: users can view own orders, write is server-only
+-- 7. Policies for orders: users can view own orders and insert their own pending orders
 do $$
 begin
   if not exists (
@@ -123,8 +123,19 @@ begin
       on public.orders for select
       using (auth.uid() = user_id);
   end if;
+
+  if not exists (
+    select 1 from pg_policies 
+    where schemaname = 'public' and tablename = 'orders' and policyname = 'Users can insert own pending orders'
+  ) then
+    create policy "Users can insert own pending orders"
+      on public.orders for insert
+      to authenticated
+      with check (auth.uid() = user_id and status = 'created');
+  end if;
 end $$;
 
--- Notice: No insert/update/delete policies for orders, payment_events, or admin_audit_log.
--- These tables are strictly written via Supabase Service Role on the server.
+-- Notice: No update/delete policies for orders, payment_events, or admin_audit_log for regular users.
+-- Paid status, expiry, and plans are strictly fulfilled via Cashfree Webhooks on the server.
+
 
