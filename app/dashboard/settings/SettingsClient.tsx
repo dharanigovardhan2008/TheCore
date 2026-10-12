@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Trash, User, Loader2, Check, FileText } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, Trash, User, Loader2, Check, FileText, CreditCard } from "lucide-react";
 import { deleteAccount, updateProfile } from "./actions";
 
 export default function SettingsClient({ user }: { user: { email: string, name: string } }) {
@@ -105,28 +106,60 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
           </div>
         </section>
 
+        {/* Subscription & Billing Section */}
+        <section>
+          <div className="px-4 sm:px-0 mb-4 text-[13px] font-bold text-[var(--text-secondary)] uppercase tracking-wide flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Subscription & Billing
+          </div>
+          <div className="glass rounded-[var(--radius-panel)] overflow-hidden shadow-[var(--shadow-soft)] p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">Manage Plans & Invoices</h3>
+              <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+                View your current limits, upgrade to Pro with Cashfree, or download payment receipts.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/settings/billing"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0"
+            >
+              Billing Settings →
+            </Link>
+          </div>
+        </section>
+
         {/* Legal Section */}
         <section>
           <div className="px-4 sm:px-0 mb-4 text-[13px] font-bold text-[var(--text-secondary)] uppercase tracking-wide flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Legal
+            Legal & Compliance
           </div>
           <div className="glass rounded-[var(--radius-panel)] overflow-hidden shadow-[var(--shadow-soft)] p-6 sm:p-8">
             <div className="flex flex-col gap-4">
-              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
+              <Link href="/pricing" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
+                Pricing & Plans
+                <span className="text-[var(--text-tertiary)]">→</span>
+              </Link>
+              <div className="h-px w-full bg-[var(--border-light)]" />
+              <Link href="/refund-policy" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
+                Refund & Cancellation Policy
+                <span className="text-[var(--text-tertiary)]">→</span>
+              </Link>
+              <div className="h-px w-full bg-[var(--border-light)]" />
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
                 Terms of Service
                 <span className="text-[var(--text-tertiary)]">→</span>
-              </a>
+              </Link>
               <div className="h-px w-full bg-[var(--border-light)]" />
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
                 Privacy Policy
                 <span className="text-[var(--text-tertiary)]">→</span>
-              </a>
+              </Link>
               <div className="h-px w-full bg-[var(--border-light)]" />
-              <a href="/cookies" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
-                Cookie Policy
+              <Link href="/contact" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
+                Contact & Support
                 <span className="text-[var(--text-tertiary)]">→</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -143,7 +176,7 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
                 <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">Delete Account</h3>
                 <p className="text-sm text-red-600/70 dark:text-red-400/70">
                   Permanently delete your account and all associated data. This cannot be recovered. 
-                  See our <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-600 dark:hover:text-red-300">Privacy Policy</a> regarding data retention.
+                  See our <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-600 dark:hover:text-red-300">Privacy Policy</Link> regarding data retention.
                 </p>
               </div>
               <button 

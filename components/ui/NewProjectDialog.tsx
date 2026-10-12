@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import LogoUpload from './LogoUpload';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -186,8 +187,23 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
         {/* SCROLLABLE CONTENT */}
         <div className="p-6 sm:p-8 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
           {error && (
-            <div className="mb-6 p-4 bg-[var(--color-danger)]/10 text-[var(--color-danger)] rounded-[var(--radius-btn)] text-sm border border-[var(--color-danger)]/20 shadow-sm">
-              {error}
+            <div className="mb-6 p-4 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold">{error.replace('PLAN_LIMIT_REACHED: ', '')}</p>
+                {error.includes('PLAN_LIMIT_REACHED') && (
+                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                    Upgrade to TheCore Pro for unlimited projects and .env vaults.
+                  </p>
+                )}
+              </div>
+              {error.includes('PLAN_LIMIT_REACHED') && (
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0"
+                >
+                  View Plans & Upgrade →
+                </Link>
+              )}
             </div>
           )}
           

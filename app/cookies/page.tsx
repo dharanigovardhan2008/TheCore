@@ -545,21 +545,12 @@ export default function CookiesPage() {
               </div>
 
               <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-500">
-                <Link href="/" className="transition hover:text-blue-600">
-                  Home
-                </Link>
-                <Link
-                  href="/privacy"
-                  className="transition hover:text-blue-600"
-                >
-                  Privacy Policy
-                </Link>
-                <Link
-                  href="/terms"
-                  className="transition hover:text-blue-600"
-                >
-                  Terms of Service
-                </Link>
+                <Link href="/" className="transition hover:text-blue-600">Home</Link>
+                <Link href="/pricing" className="transition hover:text-blue-600">Pricing</Link>
+                <Link href="/privacy" className="transition hover:text-blue-600">Privacy Policy</Link>
+                <Link href="/terms" className="transition hover:text-blue-600">Terms of Service</Link>
+                <Link href="/refund-policy" className="transition hover:text-blue-600">Refund Policy</Link>
+                <Link href="/contact" className="transition hover:text-blue-600">Contact</Link>
               </div>
             </footer>
           </div>

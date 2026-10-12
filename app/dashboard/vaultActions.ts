@@ -6,6 +6,7 @@ import { EnvFile } from '@/lib/types'
 // In lib/crypto, VaultVerifier and EncryptedData are interfaces
 import { VaultVerifier, EncryptedData } from '@/lib/crypto'
 import { logActivity } from './actions'
+import { getEffectiveLimits } from '@/lib/plans'
 
 export async function getProfile() {
   const supabase = await createClient()
@@ -14,7 +15,7 @@ export async function getProfile() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('display_name, avatar_url, vault_verifier')
+    .select('display_name, avatar_url, vault_verifier, plan, plan_expires_at, role')
     .eq('id', user.id)
     .single()
 
@@ -61,10 +62,59 @@ export async function getEnvFiles(projectId?: string): Promise<EnvFile[]> {
   return (data as EnvFile[]) || []
 }
 
-export async function upsertEnvFile(projectId: string, fileName: string, label: string | null, data: EncryptedData, version: string, id?: string) {
+async function assertCanCreateEnvFile(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  projectId: string,
+  fileName: string,
+  id?: string
+) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan, plan_expires_at')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const limits = getEffectiveLimits(profile?.plan, profile?.plan_expires_at)
+  if (Number.isFinite(limits.maxEnvFilesPerProject)) {
+    // If id or (projectId, fileName) exists, it is an update, not a new file
+    let query = supabase.from('env_files').select('id').eq('project_id', projectId)
+    if (id) {
+      query = query.eq('id', id)
+    } else {
+      query = query.eq('file_name', fileName)
+    }
+    const { data: existing } = await query.maybeSingle()
+
+    if (!existing) {
+      const { count } = await supabase
+        .from('env_files')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+
+      if ((count || 0) >= limits.maxEnvFilesPerProject) {
+        throw new Error(
+          `PLAN_LIMIT_REACHED: Free plan allows up to ${limits.maxEnvFilesPerProject} .env file per project. Upgrade to Pro for unlimited .env files.`
+        )
+      }
+    }
+  }
+}
+
+export async function upsertEnvFile(
+  projectId: string,
+  fileName: string,
+  label: string | null,
+  data: EncryptedData,
+  version: string,
+  id?: string
+) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
+
+  // Check plan limits before inserting new .env file
+  await assertCanCreateEnvFile(supabase, user.id, projectId, fileName, id)
 
   const payload: any = {
     project_id: projectId,

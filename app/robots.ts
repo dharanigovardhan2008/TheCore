@@ -1,15 +1,29 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.isroot.in';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.indevs.in';
 
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/login', '/signup', '/privacy', '/terms', '/cookies'],
+      allow: [
+        '/',
+        '/login',
+        '/signup',
+        '/pricing',
+        '/refund-policy',
+        '/contact',
+        '/privacy',
+        '/terms',
+        '/cookies',
+      ],
       disallow: [
+        '/admin',
+        '/admin/*',
         '/dashboard',
         '/dashboard/*',
+        '/billing',
+        '/billing/*',
         '/todos',
         '/todos/*',
         '/env',

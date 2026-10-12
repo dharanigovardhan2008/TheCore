@@ -596,12 +596,11 @@ export default function PrivacyPage() {
               </div>
               <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-500">
                 <Link href="/" className="hover:text-blue-600">Home</Link>
-                <Link href="/terms" className="hover:text-blue-600">
-                  Terms of Service
-                </Link>
-                <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-blue-600">
-                  Contact
-                </a>
+                <Link href="/pricing" className="hover:text-blue-600">Pricing</Link>
+                <Link href="/terms" className="hover:text-blue-600">Terms of Service</Link>
+                <Link href="/refund-policy" className="hover:text-blue-600">Refund Policy</Link>
+                <Link href="/contact" className="hover:text-blue-600">Contact</Link>
+                <Link href="/cookies" className="hover:text-blue-600">Cookies</Link>
               </div>
             </footer>
           </div>

@@ -68,3 +68,4 @@ describe('Middleware & Auth Session Suite', () => {
     assert.strictEqual(defaultVaultPassword === null, true);
   });
 });
+

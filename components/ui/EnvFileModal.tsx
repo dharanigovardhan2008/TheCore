@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { X, Upload, FileCode, Info } from 'lucide-react'
 import { parseEnv } from '@/lib/dotenv'
 import { Project } from '@/lib/types'
@@ -130,8 +131,23 @@ export function EnvFileModal({ isOpen, onClose, onSave, projects, initialProject
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
-            <div className="p-4 bg-red-50 text-red-600 rounded-[var(--radius-card)] text-sm font-medium">
-              {error}
+            <div className="p-4 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold">{error.replace('PLAN_LIMIT_REACHED: ', '')}</p>
+                {error.includes('PLAN_LIMIT_REACHED') && (
+                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                    Upgrade to TheCore Pro for unlimited .env files and projects.
+                  </p>
+                )}
+              </div>
+              {error.includes('PLAN_LIMIT_REACHED') && (
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0"
+                >
+                  View Plans & Upgrade →
+                </Link>
+              )}
             </div>
           )}
 

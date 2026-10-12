@@ -7,7 +7,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://ik.imagekit.io; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://upload.imagekit.io; frame-ancestors 'none'; object-src 'none'; base-uri 'self';"
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://ik.imagekit.io; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://upload.imagekit.io https://sandbox.cashfree.com https://api.cashfree.com; frame-src 'self' https://sandbox.cashfree.com https://api.cashfree.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self';"
           },
           {
             key: 'X-Frame-Options',
@@ -33,6 +33,24 @@ const nextConfig = {
       },
       {
         source: '/dashboard/:path*',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow'
+          }
+        ]
+      },
+      {
+        source: '/admin/:path*',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow'
+          }
+        ]
+      },
+      {
+        source: '/billing/:path*',
         headers: [
           {
             key: 'X-Robots-Tag',

@@ -7,6 +7,36 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   vault_verifier: Record<string, unknown> | null;
+  terms_version?: string | null;
+  terms_accepted_at?: string | null;
+  plan?: 'free' | 'pro' | string | null;
+  plan_expires_at?: string | null;
+  role?: 'user' | 'admin' | string | null;
+  is_disabled?: boolean | null;
+  created_at: string;
+}
+
+export interface Order {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  billing_cycle: 'month' | 'year';
+  amount_paise: number;
+  currency: string;
+  cf_order_id: string;
+  cf_payment_session_id?: string | null;
+  status: 'created' | 'paid' | 'failed' | 'expired';
+  created_at: string;
+  paid_at?: string | null;
+  receipt_url?: string | null;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  admin_id: string;
+  action: string;
+  target_user_id?: string | null;
+  details: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -113,4 +143,3 @@ export const PRIORITY_LABELS: Record<TodoPriority, string> = {
   med: "Medium",
   high: "High",
 };
-

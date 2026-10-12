@@ -419,7 +419,7 @@ export default async function HomePage() {
           <div className="hidden items-center gap-7 md:flex text-[13px] font-medium text-slate-600">
             <a href="#features" className="nav-link transition-colors hover:text-blue-600">Features</a>
             <a href="#experience" className="nav-link transition-colors hover:text-blue-600">Experience</a>
-            <a href="#pricing" className="nav-link transition-colors hover:text-blue-600">Pricing</a>
+            <Link href="/pricing" className="nav-link transition-colors hover:text-blue-600">Pricing</Link>
             <a href="#faq" className="nav-link transition-colors hover:text-blue-600">FAQs</a>
           </div>
 
@@ -918,7 +918,7 @@ export default async function HomePage() {
                 <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500">
                   <a href="#features" className="nav-link">Features</a>
                   <a href="#experience" className="nav-link">Experience</a>
-                  <a href="#pricing" className="nav-link">Pricing</a>
+                  <Link href="/pricing" className="nav-link">Pricing & Plans</Link>
                   <Link href="/login" className="nav-link">Sign in</Link>
                 </div>
               </div>
@@ -928,8 +928,10 @@ export default async function HomePage() {
                   INFORMATION
                 </h3>
                 <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500">
-                  <Link href="/privacy" className="nav-link">Privacy</Link>
-                  <Link href="/terms" className="nav-link">Terms</Link>
+                  <Link href="/privacy" className="nav-link">Privacy Policy</Link>
+                  <Link href="/terms" className="nav-link">Terms of Service</Link>
+                  <Link href="/refund-policy" className="nav-link">Refund Policy</Link>
+                  <Link href="/contact" className="nav-link">Contact Us</Link>
                   <Link href="/cookies" className="nav-link">Cookies</Link>
                 </div>
               </div>
