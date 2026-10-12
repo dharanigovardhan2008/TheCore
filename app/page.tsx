@@ -411,38 +411,38 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <main className="min-h-screen w-full overflow-x-clip bg-white text-slate-950 antialiased">
-      {/* Navigation */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-2xl">
-        <nav className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
+      {/* Floating Pill Navigation */}
+      <header className="sticky top-4 sm:top-6 z-50 px-4 sm:px-6 w-full flex justify-center pointer-events-none">
+        <nav className="pointer-events-auto flex h-14 max-w-5xl w-full items-center justify-between px-4 sm:px-6 rounded-full bg-white/85 backdrop-blur-xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-200">
           <Brand />
 
-          <div className="hidden items-center gap-7 md:flex">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#experience" className="nav-link">Experience</a>
-            <a href="#pricing" className="nav-link">Pricing</a>
-            <a href="#faq" className="nav-link">FAQs</a>
+          <div className="hidden items-center gap-7 md:flex text-[13px] font-medium text-slate-600">
+            <a href="#features" className="nav-link transition-colors hover:text-blue-600">Features</a>
+            <a href="#experience" className="nav-link transition-colors hover:text-blue-600">Experience</a>
+            <a href="#pricing" className="nav-link transition-colors hover:text-blue-600">Pricing</a>
+            <a href="#faq" className="nav-link transition-colors hover:text-blue-600">FAQs</a>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {user ? (
               <Link
                 href="/dashboard"
-                className="inline-flex h-10 items-center gap-2 rounded-full bg-blue-600 px-5 text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
+                className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 sm:px-5 text-xs sm:text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
               >
-                Open dashboard <ArrowUpRight size={15} />
+                Dashboard <ArrowUpRight size={15} />
               </Link>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className="hidden text-[13px] font-medium text-slate-600 transition hover:text-blue-700 sm:inline-flex"
+                  className="hidden text-[13px] font-medium text-slate-600 transition hover:text-blue-700 sm:inline-flex px-2 py-1"
                 >
                   Log in
                 </Link>
 
                 <Link
                   href="/signup"
-                  className="inline-flex h-10 items-center gap-2 rounded-full bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
+                  className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 sm:px-5 text-xs sm:text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
                 >
                   Get started free <ArrowUpRight size={15} />
                 </Link>

@@ -13,6 +13,7 @@
   --color-accent-primary: var(--color-primary);
   --color-accent-secondary: var(--color-warning);
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-caveat: var(--font-caveat), cursive;
 }
 
 :root {

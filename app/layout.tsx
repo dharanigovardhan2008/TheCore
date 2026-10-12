@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import { DM_Sans, Caveat } from "next/font/google";
 import "./globals.css";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const caveat = Caveat({
+  variable: "--font-caveat",
   subsets: ["latin"],
   display: "swap",
 });
@@ -51,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${dmSans.variable} antialiased`}>
+    <html lang="en" className={`${dmSans.variable} ${caveat.variable} antialiased`}>
       <body className="flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] selection:bg-tint selection:text-white">
         {children}
       </body>

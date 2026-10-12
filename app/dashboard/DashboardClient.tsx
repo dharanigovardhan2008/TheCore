@@ -44,25 +44,26 @@ export default function DashboardClient({ projects, services, todos = [], envFil
     { label: 'Idea', value: stats.idea, color: 'var(--color-accent)' },
   ].filter(d => d.value > 0), [stats]);
 
-  const displayName = profile?.display_name ? profile.display_name.split(' ')[0] : 'User';
+  const rawName = profile?.display_name || '';
+  const username = rawName ? rawName.trim().split(' ')[0] : '';
+  const formattedUsername = username
+    ? username.charAt(0).toUpperCase() + username.slice(1)
+    : '';
+  const greetingText = formattedUsername
+    ? `Welcome Back, ${formattedUsername}`
+    : 'Welcome Back';
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* Header */}
-      <div className="flex flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] truncate">Welcome back, {displayName}</h1>
-          <p className="text-[var(--text-secondary)] mt-1 truncate">Here's an overview of all your projects.</p>
-        </div>
-        <button 
-          onClick={() => setIsNewProjectOpen(true)}
-          className="flex shrink-0 items-center justify-center w-12 h-12 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 text-white rounded-full shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium active:scale-95"
-          aria-label="New Project"
+    <div className="space-y-6 sm:space-y-8 pb-20">
+      {/* Welcome text in Caveat font (no card) */}
+      <div className="pt-2 pb-1 animate-in fade-in duration-500">
+        <h1
+          style={{ fontFamily: 'var(--font-caveat), Caveat, cursive' }}
+          className="text-4xl sm:text-5xl lg:text-6xl text-slate-800 font-bold tracking-wide select-none leading-tight"
         >
-          <Plus className="w-6 h-6 stroke-[2.5]" />
-        </button>
+          {greetingText}
+        </h1>
       </div>
-
       {/* STAT CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard title="Total Projects" value={stats.total} icon={<FolderOpen className="w-5 h-5 stroke-[2]" />} color="var(--color-primary)" delay="delay-100" />

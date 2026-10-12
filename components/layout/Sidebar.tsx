@@ -44,9 +44,9 @@ export default function Sidebar({ user }: { user?: { email: string, name: string
               key={item.href}
               href={item.href}
               className={clsx(
-                "flex items-center gap-3 px-4 py-3 rounded-[var(--radius-btn)] transition-premium font-medium text-sm",
+                "flex items-center gap-3 px-4 py-2.5 rounded-full transition-premium font-medium text-sm",
                 isActive 
-                  ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]" 
+                  ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold" 
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-tint)] hover:text-[var(--text-primary)]"
               )}
             >
