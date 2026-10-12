@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ElementType, ReactNode } from "react";
 import Brand from "@/components/ui/Brand";
 import { createClient } from "@/utils/supabase/server";
+import { signOut } from "@/app/dashboard/settings/actions";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.indevs.in';
 
@@ -54,6 +55,7 @@ import {
   Sparkles,
   Zap,
   CheckSquare,
+  LogOut,
 } from "lucide-react";
 
 const features = [
@@ -423,14 +425,25 @@ export default async function HomePage() {
             <a href="#faq" className="nav-link transition-colors hover:text-blue-600">FAQs</a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {user ? (
-              <Link
-                href="/dashboard"
-                className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 sm:px-5 text-xs sm:text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
-              >
-                Dashboard <ArrowUpRight size={15} />
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full bg-blue-600 px-3.5 sm:px-5 text-xs sm:text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
+                >
+                  Dashboard <ArrowUpRight size={15} />
+                </Link>
+                <form action={signOut}>
+                  <button
+                    type="submit"
+                    className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 px-3 sm:px-4 text-xs sm:text-[13px] font-semibold text-slate-700 hover:text-rose-600 shadow-2xs transition active:scale-95 cursor-pointer"
+                  >
+                    <LogOut size={14} className="text-rose-500" />
+                    <span className="hidden sm:inline">Log out</span>
+                  </button>
+                </form>
+              </div>
             ) : (
               <>
                 <Link

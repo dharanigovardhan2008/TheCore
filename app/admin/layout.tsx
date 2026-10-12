@@ -11,7 +11,9 @@ import {
   ShieldAlert,
   ArrowLeft,
   ShieldCheck,
+  LogOut,
 } from 'lucide-react';
+import { signOut } from '@/app/dashboard/settings/actions';
 
 export const metadata: Metadata = {
   title: 'Admin Console | TheCore',
@@ -98,6 +100,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
           </Link>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Log out
+            </button>
+          </form>
         </div>
       </aside>
 

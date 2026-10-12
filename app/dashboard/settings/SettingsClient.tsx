@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Trash, User, Loader2, Check, FileText, CreditCard } from "lucide-react";
-import { deleteAccount, updateProfile } from "./actions";
+import { AlertTriangle, Trash, User, Loader2, Check, FileText, CreditCard, LogOut } from "lucide-react";
+import { deleteAccount, updateProfile, signOut } from "./actions";
 
 export default function SettingsClient({ user }: { user: { email: string, name: string } }) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,8 +51,17 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
 
   return (
     <div className="max-w-3xl mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-8 px-4 sm:px-0">
+      <div className="mb-8 px-4 sm:px-0 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-[var(--text-primary)] tracking-tight">Settings</h1>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 border border-rose-200 bg-rose-50/60 hover:bg-rose-100 transition-colors shadow-2xs"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Log out</span>
+          </button>
+        </form>
       </div>
 
       <div className="space-y-12">
