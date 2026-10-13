@@ -102,11 +102,28 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
                       {o.cf_order_id}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-[var(--text-content)]">
-                        {o.profiles?.display_name || 'Anonymous User'}
-                      </div>
-                      <div className="font-mono text-[10px] text-[var(--text-content-tertiary)] mt-0.5">
-                        {o.user_id.slice(0, 8)}...
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border border-[var(--separator)] shrink-0 flex items-center justify-center">
+                          {o.profiles?.avatar_url ? (
+                            <img
+                              src={o.profiles.avatar_url}
+                              alt={o.profiles.display_name || 'User'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">
+                              {(o.profiles?.display_name || 'U').charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-[var(--text-content)] truncate max-w-[140px]">
+                            {o.profiles?.display_name || 'Anonymous User'}
+                          </div>
+                          <div className="text-[10px] text-[var(--text-content-secondary)] truncate max-w-[140px]">
+                            {o.profiles?.profession || `${o.user_id.slice(0, 8)}...`}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="py-3 px-4 capitalize">

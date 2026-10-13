@@ -6,13 +6,28 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import Brand from "@/components/ui/Brand";
 import LoadingOrb from "@/components/ui/LoadingOrb";
+import AvatarPicker, { DEFAULT_AVATARS } from "@/components/ui/AvatarPicker";
 import { CURRENT_TERMS_VERSION } from "@/lib/legal";
+
+const DEFAULT_PROFESSIONS = [
+  "Software Developer",
+  "Student",
+  "Indie Hacker / Founder",
+  "UI/UX Designer",
+  "Freelancer",
+  "Product Manager",
+  "Other",
+];
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const initialMode = searchParams.get("mode") === "complete_google_signup" ? "complete_google_signup" : "login";
   const [mode, setMode] = useState<"login" | "signup" | "complete_google_signup">(initialMode);
   const [name, setName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(DEFAULT_AVATARS[0]);
+  const [profession, setProfession] = useState<string>("Software Developer");
+  const [customProfession, setCustomProfession] = useState<string>("");
+  const [workplace, setWorkplace] = useState<string>("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,6 +45,9 @@ function LoginContent() {
         }
         if (data?.user?.user_metadata?.full_name) {
           setName(data.user.user_metadata.full_name);
+        }
+        if (data?.user?.user_metadata?.avatar_url) {
+          setAvatarUrl(data.user.user_metadata.avatar_url);
         }
       });
     }
@@ -65,27 +83,40 @@ function LoginContent() {
         if (error) throw error;
         router.push("/dashboard");
       } else if (mode === "complete_google_signup") {
+        const finalProfession = profession === "Other" ? (customProfession.trim() || "Other") : (profession || "Software Developer");
         const { data: updateData, error } = await supabase.auth.updateUser({ 
           password,
-          data: { full_name: name }
+          data: { 
+            full_name: name,
+            avatar_url: avatarUrl,
+            profession: finalProfession,
+            workplace: workplace.trim(),
+          }
         });
         if (error) throw error;
         if (updateData?.user) {
           await supabase.from('profiles').upsert({
             id: updateData.user.id,
             display_name: name,
+            avatar_url: avatarUrl,
+            profession: finalProfession,
+            workplace: workplace.trim(),
             terms_version: CURRENT_TERMS_VERSION,
             terms_accepted_at: new Date().toISOString()
           }, { onConflict: 'id' });
         }
         router.push("/dashboard");
       } else {
+        const finalProfession = profession === "Other" ? (customProfession.trim() || "Other") : (profession || "Software Developer");
         const { data: signUpData, error } = await supabase.auth.signUp({ 
           email, 
           password,
           options: {
             data: {
-              full_name: name
+              full_name: name,
+              avatar_url: avatarUrl,
+              profession: finalProfession,
+              workplace: workplace.trim(),
             }
           }
         });
@@ -95,6 +126,9 @@ function LoginContent() {
           await supabase.from('profiles').upsert({
             id: signUpData.user.id,
             display_name: name,
+            avatar_url: avatarUrl,
+            profession: finalProfession,
+            workplace: workplace.trim(),
             terms_version: CURRENT_TERMS_VERSION,
             terms_accepted_at: new Date().toISOString()
           }, { onConflict: 'id' });
@@ -143,50 +177,108 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 gradient-bg">
-      <div className="w-full max-w-md bg-surface p-8 rounded-[var(--radius-shell)] shadow-[var(--shadow-shell-soft)]">
-        <div className="text-center mb-8">
+    <div className="min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 md:p-8 gradient-bg">
+      <div className={`w-full ${mode === "signup" || mode === "complete_google_signup" ? "max-w-xl" : "max-w-md"} bg-surface p-6 sm:p-8 rounded-[var(--radius-shell)] shadow-[var(--shadow-shell-soft)] transition-all my-auto`}>
+        <div className="text-center mb-6">
           <div className="mb-4 flex justify-center">
             <Brand size="lg" />
           </div>
           <h1 className="text-2xl font-bold text-content">Welcome to TheCore</h1>
-          <p className="text-content-secondary mt-2 text-sm">
+          <p className="text-content-secondary mt-1.5 text-sm">
             {mode === "login" ? "Sign in to your account" : mode === "complete_google_signup" ? "Set a password to complete your account" : "Create a new account"}
           </p>
         </div>
 
         {mode !== "complete_google_signup" && (
-<div className="flex bg-surface-tint p-1 rounded-lg mb-6">
-          <button
-            type="button"
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "login" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
-            onClick={() => { setMode("login"); setError(null); }}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "signup" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
-            onClick={() => { setMode("signup"); setError(null); }}
-          >
-            Sign Up
-          </button>
-        </div>
-)}
+          <div className="flex bg-surface-tint p-1 rounded-lg mb-6">
+            <button
+              type="button"
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "login" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
+              onClick={() => { setMode("login"); setError(null); }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "signup" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
+              onClick={() => { setMode("signup"); setError(null); }}
+            >
+              Sign Up
+            </button>
+          </div>
+        )}
 
         <form className="space-y-4" onSubmit={handleAuth}>
           {(mode === "signup" || mode === "complete_google_signup") && (
-            <div>
-              <label className="block text-sm font-medium text-content mb-1">Full Name</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
-                placeholder="John Doe"
-              />
-            </div>
+            <>
+              {/* Profile Photo / 3D Pixar Avatar Picker */}
+              <div className="pb-1">
+                <AvatarPicker
+                  value={avatarUrl}
+                  onChange={setAvatarUrl}
+                  nameFallback={name || "User"}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-content mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
+                  placeholder="e.g. Alex Rivera"
+                />
+              </div>
+
+              {/* Profession Selection */}
+              <div>
+                <label className="block text-sm font-medium text-content mb-1.5">
+                  Profession / Role
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {DEFAULT_PROFESSIONS.map((prof) => (
+                    <button
+                      key={prof}
+                      type="button"
+                      onClick={() => setProfession(prof)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                        profession === prof
+                          ? "bg-accent-primary text-white shadow-xs"
+                          : "bg-surface-tint hover:bg-surface text-content border border-transparent hover:border-slate-300 dark:hover:border-slate-700"
+                      }`}
+                    >
+                      {prof}
+                    </button>
+                  ))}
+                </div>
+                {profession === "Other" && (
+                  <input
+                    type="text"
+                    required
+                    value={customProfession}
+                    onChange={(e) => setCustomProfession(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700 text-sm mt-1"
+                    placeholder="Enter your profession..."
+                  />
+                )}
+              </div>
+
+              {/* Workplace / College */}
+              <div>
+                <label className="block text-sm font-medium text-content mb-1">
+                  Workplace / College / Organization
+                </label>
+                <input
+                  type="text"
+                  value={workplace}
+                  onChange={(e) => setWorkplace(e.target.value)}
+                  className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
+                  placeholder="e.g. Google, MIT, Freelancer, Stealth Startup..."
+                />
+              </div>
+            </>
           )}
           <div>
             <label className="block text-sm font-medium text-content mb-1">Email</label>

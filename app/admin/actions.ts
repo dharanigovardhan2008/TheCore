@@ -133,7 +133,7 @@ export async function getAdminUsers(options?: {
 
   let query = adminDb
     .from('profiles')
-    .select('id, display_name, plan, plan_expires_at, role, is_disabled, created_at', { count: 'exact' })
+    .select('id, display_name, avatar_url, profession, workplace, plan, plan_expires_at, role, is_disabled, created_at', { count: 'exact' })
     .order('created_at', { ascending: false });
 
   if (options?.plan && options.plan !== 'all') {
@@ -142,7 +142,7 @@ export async function getAdminUsers(options?: {
 
   if (options?.search && options.search.trim()) {
     const term = `%${options.search.trim()}%`;
-    query = query.or(`display_name.ilike.${term},id.ilike.${term}`);
+    query = query.or(`display_name.ilike.${term},id.ilike.${term},profession.ilike.${term},workplace.ilike.${term}`);
   }
 
   const limit = options?.limit || 25;
@@ -288,7 +288,7 @@ export async function getAdminPayments(options?: {
 
   let query = adminDb
     .from('orders')
-    .select('*, profiles(id, display_name)', { count: 'exact' })
+    .select('*, profiles(id, display_name, avatar_url, profession, workplace)', { count: 'exact' })
     .order('created_at', { ascending: false });
 
   if (options?.status && options.status !== 'all') {

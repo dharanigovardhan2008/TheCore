@@ -58,7 +58,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${dmSans.variable} ${caveat.variable} antialiased`}>
-      <body className="flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] selection:bg-tint selection:text-white">
+      <body className="flex flex-col min-h-[100dvh] m-0 p-0 selection:bg-tint selection:text-white">
         {children}
       </body>
     </html>

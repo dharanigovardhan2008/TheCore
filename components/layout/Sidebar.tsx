@@ -19,6 +19,9 @@ import { signOut } from "@/app/dashboard/settings/actions";
 export interface UserProfileInfo {
   email: string;
   name: string;
+  avatarUrl?: string | null;
+  profession?: string | null;
+  workplace?: string | null;
   plan?: string;
   isPro?: boolean;
   planExpiresAt?: string | null;
@@ -107,9 +110,17 @@ export default function Sidebar({ user }: { user?: UserProfileInfo }) {
 
         {/* User Card */}
         <div className="flex items-center gap-2.5 px-1 py-1">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white font-bold text-xs uppercase shrink-0 shadow-xs">
-            {user?.name?.charAt(0) || 'U'}
-          </div>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.name || "User avatar"}
+              className="w-8 h-8 rounded-full object-cover shrink-0 shadow-xs border border-white/80 dark:border-white/20"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white font-bold text-xs uppercase shrink-0 shadow-xs">
+              {user?.name?.charAt(0) || 'U'}
+            </div>
+          )}
           <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-semibold truncate text-[var(--text-primary)]">{user?.name || 'User'}</span>

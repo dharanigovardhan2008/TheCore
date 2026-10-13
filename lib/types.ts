@@ -6,6 +6,8 @@ export interface Profile {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
+  profession?: string | null;
+  workplace?: string | null;
   vault_verifier: Record<string, unknown> | null;
   terms_version?: string | null;
   terms_accepted_at?: string | null;

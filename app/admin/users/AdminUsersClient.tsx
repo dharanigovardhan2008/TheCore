@@ -9,6 +9,9 @@ import {
   X,
   Loader2,
   CheckCircle,
+  Briefcase,
+  Building,
+  CreditCard,
 } from 'lucide-react';
 import LoadingOrb from '@/components/ui/LoadingOrb';
 import {
@@ -190,6 +193,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
               <thead>
                 <tr className="border-b border-[var(--separator)] bg-[var(--bg-grouped)] text-[var(--text-content-secondary)]">
                   <th className="py-3 px-4 font-semibold">User</th>
+                  <th className="py-3 px-4 font-semibold">Profession & Workplace</th>
                   <th className="py-3 px-4 font-semibold">Plan</th>
                   <th className="py-3 px-4 font-semibold">Expiry Date</th>
                   <th className="py-3 px-4 font-semibold">Role</th>
@@ -202,12 +206,39 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                 {users.map((u) => (
                   <tr key={u.id} className="hover:bg-[var(--bg-grouped)] transition-colors">
                     <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-850 border border-[var(--separator)] shrink-0 flex items-center justify-center">
+                          {u.avatar_url ? (
+                            <img
+                              src={u.avatar_url}
+                              alt={u.display_name || 'User'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xs font-bold text-slate-500 uppercase">
+                              {(u.display_name || 'U').charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-[var(--text-content)] truncate max-w-[160px] sm:max-w-xs">
+                            {u.display_name || 'Anonymous User'}
+                          </div>
+                          <div className="font-mono text-[10px] text-[var(--text-content-tertiary)] truncate max-w-[140px]">
+                            {u.id}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
                       <div className="font-medium text-[var(--text-content)]">
-                        {u.display_name || 'Anonymous User'}
+                        {u.profession || '—'}
                       </div>
-                      <div className="font-mono text-[10px] text-[var(--text-content-tertiary)] mt-0.5">
-                        {u.id}
-                      </div>
+                      {u.workplace && (
+                        <div className="text-[10px] text-[var(--text-content-secondary)] mt-0.5">
+                          @ {u.workplace}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <span
@@ -290,6 +321,62 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                   </div>
                 )}
 
+                {/* User Profile Card */}
+                <div className="flex items-start sm:items-center gap-4 p-4 rounded-2xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-indigo-500/30 shrink-0 shadow-sm flex items-center justify-center">
+                    {userDetail.profile.avatar_url ? (
+                      <img
+                        src={userDetail.profile.avatar_url}
+                        alt={userDetail.profile.display_name || 'User'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl font-bold text-slate-500 uppercase">
+                        {(userDetail.profile.display_name || 'U').charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-bold text-base sm:text-lg text-[var(--text-content)]">
+                        {userDetail.profile.display_name || 'Anonymous User'}
+                      </h4>
+                      <span className="font-mono uppercase text-[10px] px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                        {userDetail.profile.role || 'user'}
+                      </span>
+                      {userDetail.profile.is_disabled ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-600 font-semibold">
+                          Disabled
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-semibold">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-mono text-xs text-[var(--text-content-tertiary)] mt-0.5 select-all">
+                      {userDetail.profile.id}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs">
+                      {userDetail.profile.profession && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 font-medium">
+                          <Briefcase className="w-3.5 h-3.5" />
+                          <span>{userDetail.profile.profession}</span>
+                        </div>
+                      )}
+                      {userDetail.profile.workplace && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-200/70 dark:bg-slate-800 text-[var(--text-content-secondary)] font-medium">
+                          <Building className="w-3.5 h-3.5" />
+                          <span>{userDetail.profile.workplace}</span>
+                        </div>
+                      )}
+                      <div className="text-[11px] text-[var(--text-content-secondary)]">
+                        Joined: {new Date(userDetail.profile.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Identity & Plan Status */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
@@ -301,6 +388,8 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                     <div className="font-semibold text-xs mt-0.5 truncate">
                       {userDetail.profile.plan_expires_at
                         ? new Date(userDetail.profile.plan_expires_at).toLocaleDateString()
+                        : userDetail.profile.plan === 'pro'
+                        ? 'Permanent'
                         : '—'}
                     </div>
                   </div>
@@ -309,8 +398,10 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                     <div className="font-bold text-sm mt-0.5">{userDetail.projectCount}</div>
                   </div>
                   <div className="p-3 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
-                    <span className="text-[10px] text-[var(--text-content-secondary)]">.env Files</span>
-                    <div className="font-bold text-sm mt-0.5">{userDetail.envFileCount}</div>
+                    <span className="text-[10px] text-[var(--text-content-secondary)]">Subscriptions Taken</span>
+                    <div className="font-bold text-sm mt-0.5 text-blue-600 dark:text-blue-400">
+                      {userDetail.orders.length}
+                    </div>
                   </div>
                 </div>
 
@@ -369,37 +460,69 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                   </div>
                 </div>
 
-                {/* Orders History for this user */}
+                {/* Subscriptions & Orders Taken */}
                 <div>
-                  <h4 className="text-xs font-semibold uppercase text-[var(--text-content-secondary)] mb-2">
-                    Order History ({userDetail.orders.length})
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-blue-500" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-content-secondary)]">
+                        Subscriptions & Orders Taken ({userDetail.orders.length})
+                      </h4>
+                    </div>
+                  </div>
+
                   {userDetail.orders.length === 0 ? (
-                    <div className="p-4 rounded-xl bg-[var(--bg-grouped)] text-xs text-center text-[var(--text-content-secondary)]">
-                      No order transactions for this user.
+                    <div className="p-6 rounded-2xl bg-[var(--bg-grouped)] border border-dashed border-[var(--separator)] text-xs text-center text-[var(--text-content-secondary)]">
+                      No subscriptions or payment orders recorded for this user.
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {userDetail.orders.map((ord: NonNullable<AdminUserDetail['orders']>[number]) => (
                         <div
                           key={ord.id}
-                          className="p-3 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)] flex items-center justify-between text-xs"
+                          className="p-3.5 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                         >
-                          <div>
-                            <span className="font-mono font-medium">{ord.cf_order_id}</span>
-                            <span className="text-[11px] text-[var(--text-content-secondary)] ml-2">
-                              {new Date(ord.created_at).toLocaleDateString()}
-                            </span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono font-bold text-[var(--text-content)]">
+                                {ord.cf_order_id}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 capitalize">
+                                {ord.billing_cycle === 'year' ? '12 Months Pro' : '1 Month Pro'}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-[var(--text-content-secondary)] flex items-center gap-2 flex-wrap">
+                              <span>Created: {new Date(ord.created_at).toLocaleString()}</span>
+                              {ord.paid_at && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                    Paid: {new Date(ord.paid_at).toLocaleString()}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            {ord.refund_note && (
+                              <div className="text-[11px] text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded mt-1 inline-block">
+                                Audit Note: {ord.refund_note}
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold">₹{(ord.amount_paise / 100).toFixed(2)}</span>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                            <span className="font-bold text-sm text-[var(--text-content)]">
+                              ₹{(ord.amount_paise / 100).toFixed(2)}
+                            </span>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize flex items-center gap-1 ${
                                 ord.status === 'paid'
-                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                  : 'bg-amber-500/10 text-amber-600'
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  : ord.status === 'created'
+                                  ? 'bg-amber-500/15 text-amber-600'
+                                  : 'bg-red-500/15 text-red-600'
                               }`}
                             >
+                              {ord.status === 'paid' && <CheckCircle className="w-3 h-3" />}
                               {ord.status}
                             </span>
                           </div>

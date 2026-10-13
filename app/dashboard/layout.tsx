@@ -23,10 +23,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let isPro = false;
   let planExpiresAt: string | null = null;
 
+  let avatarUrl: string | null = null;
+  let profession: string | null = null;
+  let workplace: string | null = null;
+  let displayName: string | null = null;
+
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('terms_version, plan, plan_expires_at')
+      .select('terms_version, plan, plan_expires_at, avatar_url, profession, workplace, display_name')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -37,15 +42,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
     isPro = isProActive(profile?.plan, profile?.plan_expires_at);
     plan = isPro ? 'pro' : (profile?.plan || 'free');
     planExpiresAt = profile?.plan_expires_at || null;
+    avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || null;
+    profession = profile?.profession || user.user_metadata?.profession || null;
+    workplace = profile?.workplace || user.user_metadata?.workplace || null;
+    displayName = profile?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
   }
 
   const userObj = user ? { 
     email: user.email || '', 
-    name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+    name: displayName || user.email?.split('@')[0] || 'User',
+    avatarUrl,
+    profession,
+    workplace,
     plan,
     isPro,
     planExpiresAt
-  } : { email: '', name: 'User', plan: 'free', isPro: false, planExpiresAt: null };
+  } : { email: '', name: 'User', avatarUrl: null, profession: null, workplace: null, plan: 'free', isPro: false, planExpiresAt: null };
 
   return (
     <VaultProvider>
