@@ -252,7 +252,7 @@ export default function PaymentStatusModal({
 
         {isLoading && (
           <div className="w-[88px] h-[88px] sm:w-[94px] sm:h-[94px] rounded-full bg-emerald-500/10 text-[#39B394] flex items-center justify-center">
-            <ThinkingOrb state="listening" size={64} color="#39B394" />
+            <ThinkingOrb state="listening" size={64} color="#39B394" theme="light" dotSize={1.3} />
           </div>
         )}
       </div>
