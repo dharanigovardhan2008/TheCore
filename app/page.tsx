@@ -52,7 +52,6 @@ import {
   Search,
   Shield,
   Smartphone,
-  Sparkles,
   Zap,
   CheckSquare,
   LogOut,
@@ -356,7 +355,7 @@ function WorkspacePreview() {
 
       <div className="absolute -right-2 top-[20%] hidden items-center gap-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl shadow-slate-900/[0.06] sm:flex">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-          <Sparkles size={18} />
+          <Palette size={18} />
         </span>
 
         <div>

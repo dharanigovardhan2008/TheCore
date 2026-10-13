@@ -43,10 +43,15 @@
   --text-primary: #101828;
   --text-secondary: #667085;
   --text-tertiary: #98A2B3;
+  --text-content: #101828;
+  --text-content-secondary: #667085;
+  --text-content-tertiary: #98A2B3;
   
   /* BORDERS */
-  --border-light: rgba(70,80,160,0.08);
+  --border-light: rgba(70, 80, 160, 0.08);
   --border-color: #E2E8F0;
+  --separator: rgba(70, 80, 160, 0.08);
+  --bg-grouped: rgba(255, 255, 255, 0.6);
   
   /* RADII (Extremely rounded components) */
   --radius-card: 28px;

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Check, Zap, Shield, ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Check, Zap, Shield, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { PLANS, BillingCycle } from '@/lib/plans';
 import { createCheckoutSession } from '@/app/dashboard/actions';
 
@@ -135,8 +135,7 @@ export default function PricingClient({
 
         {/* Heading */}
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-4 border border-blue-500/20">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-4 border border-blue-500/20">
             Simple, Transparent Pricing
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
@@ -229,7 +228,7 @@ export default function PricingClient({
           </div>
 
           {/* Pro Card */}
-          <div className="bg-[var(--bg-surface)] rounded-2xl border-2 border-blue-500/50 p-8 shadow-md relative flex flex-col justify-between">
+          <div className="bg-[var(--bg-surface)] rounded-2xl border border-blue-500/40 ring-1 ring-blue-500/20 p-8 shadow-md relative flex flex-col justify-between">
             <div className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-sm">
               Recommended
             </div>

@@ -18,8 +18,7 @@ import {
   X,
   Users,
   Settings,
-  LogOut,
-  Sparkles
+  LogOut
 } from "lucide-react";
 import clsx from "clsx";
 import { signOut } from "@/app/dashboard/settings/actions";
@@ -204,9 +203,9 @@ export default function Shell({ children, user }: { children: React.ReactNode, u
                 <Link
                   href="/pricing"
                   onClick={() => setIsMenuOpen(false)}
-                  className="text-xs font-bold text-blue-600 hover:underline shrink-0 flex items-center gap-0.5"
+                  className="text-xs font-bold text-blue-600 hover:underline shrink-0"
                 >
-                  Upgrade <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  Upgrade
                 </Link>
               )}
             </div>

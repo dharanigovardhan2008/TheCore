@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
   ArrowLeft,
   ArrowRight,
-  Sparkles,
+  Check,
   Download,
   AlertCircle,
   Loader2,
@@ -201,17 +201,16 @@ export default function BillingClient({ usage }: BillingClientProps) {
           </div>
           <Link
             href="/pricing"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass hover:bg-white/90 dark:hover:bg-black/50 text-xs font-semibold text-[var(--color-primary)] border border-indigo-200/50 shadow-xs transition-premium self-start sm:self-auto group"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full glass hover:bg-white/90 dark:hover:bg-black/50 text-xs font-semibold text-indigo-600 border border-white/80 shadow-xs transition-premium self-start sm:self-auto group"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500 fill-indigo-500/30" />
             <span>Compare all plan features</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-[var(--text-tertiary)] group-hover:text-[var(--color-primary)] transition-colors" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-indigo-400 group-hover:text-indigo-600 transition-colors" />
           </Link>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/25 text-red-600 dark:text-red-400 text-sm flex items-center gap-3 shadow-xs animate-in fade-in">
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm flex items-center gap-3 shadow-xs animate-in fade-in">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span className="font-medium">{errorMsg}</span>
         </div>
@@ -219,7 +218,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
 
       {/* Hero Current Subscription Card */}
       <section>
-        <div className="glass rounded-[var(--radius-panel)] p-6 sm:p-8 shadow-[var(--shadow-soft)] relative overflow-hidden border border-white/60 dark:border-white/10">
+        <div className="glass rounded-[var(--radius-panel)] p-6 sm:p-8 shadow-[var(--shadow-soft)] relative overflow-hidden border border-white/80 dark:border-white/10">
           {/* Ambient Lighting Aura */}
           <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-blue-500/15 blur-3xl pointer-events-none" />
 
@@ -240,7 +239,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
                   {isPro ? 'TheCore Pro' : 'Free Starter'}
                 </h2>
                 {isPro ? (
-                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 flex items-center gap-1.5 shadow-2xs">
                     <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     Unlimited Pro
                   </span>
@@ -295,9 +294,9 @@ export default function BillingClient({ usage }: BillingClientProps) {
           </div>
 
           {/* Quota & Feature Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-[var(--border-light)] relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-100 dark:border-white/10 relative z-10">
             {/* Active Projects Metric */}
-            <div className="p-4 rounded-2xl bg-white/50 dark:bg-black/20 border border-[var(--border-light)] shadow-2xs backdrop-blur-xs flex flex-col justify-between">
+            <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/20 border border-white/80 dark:border-white/10 shadow-2xs backdrop-blur-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
@@ -310,7 +309,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
                     {usage.projectCount} <span className="font-normal text-[var(--text-tertiary)]">/ {isUnlimitedProjects ? '∞' : usage.limits.maxProjects}</span>
                   </span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-200/70 dark:bg-slate-800 overflow-hidden mb-2">
+                <div className="w-full h-2 rounded-full bg-slate-200/60 dark:bg-slate-800 overflow-hidden mb-2">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       isUnlimitedProjects
@@ -329,7 +328,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
             </div>
 
             {/* .env Files Metric */}
-            <div className="p-4 rounded-2xl bg-white/50 dark:bg-black/20 border border-[var(--border-light)] shadow-2xs backdrop-blur-xs flex flex-col justify-between">
+            <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/20 border border-white/80 dark:border-white/10 shadow-2xs backdrop-blur-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
@@ -352,7 +351,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
             </div>
 
             {/* Security & Sync Metric */}
-            <div className="p-4 rounded-2xl bg-white/50 dark:bg-black/20 border border-[var(--border-light)] shadow-2xs backdrop-blur-xs flex flex-col justify-between">
+            <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/20 border border-white/80 dark:border-white/10 shadow-2xs backdrop-blur-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
@@ -384,7 +383,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
           {isPro ? 'Extend Pro Access' : 'Select Subscription Tier'}
         </div>
 
-        <div className="glass rounded-[var(--radius-panel)] p-6 sm:p-8 shadow-[var(--shadow-soft)] border border-white/60 dark:border-white/10 space-y-6">
+        <div className="glass rounded-[var(--radius-panel)] p-6 sm:p-8 shadow-[var(--shadow-soft)] border border-white/80 dark:border-white/10 space-y-6">
           <div>
             <h3 className="text-base font-bold text-[var(--text-primary)]">
               {isPro ? 'Extend your Pro subscription' : 'Unlock unlimited power with TheCore Pro'}
@@ -398,19 +397,19 @@ export default function BillingClient({ usage }: BillingClientProps) {
             {/* Monthly Option Card */}
             <div
               onClick={() => setSelectedCycle('month')}
-              className={`p-6 rounded-2xl border-2 transition-premium cursor-pointer flex flex-col justify-between relative ${
+              className={`p-6 rounded-2xl border transition-premium cursor-pointer flex flex-col justify-between relative backdrop-blur-md ${
                 selectedCycle === 'month'
-                  ? 'border-[var(--color-primary)] bg-gradient-to-br from-indigo-500/10 via-white/80 to-indigo-500/5 dark:from-indigo-950/30 dark:to-black/40 shadow-md ring-4 ring-indigo-500/15'
-                  : 'border-[var(--border-light)] bg-white/40 dark:bg-black/20 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white/70'
+                  ? 'border-indigo-400/90 bg-white/95 dark:bg-black/40 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-400/20'
+                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 shadow-xs'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      selectedCycle === 'month' ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-slate-300'
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                      selectedCycle === 'month' ? 'bg-indigo-600 text-white shadow-xs' : 'border border-slate-300/80 bg-white/80'
                     }`}>
-                      {selectedCycle === 'month' && <div className="w-2 h-2 rounded-full bg-white" />}
+                      {selectedCycle === 'month' && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
                     <span className="font-bold text-base text-[var(--text-primary)]">Monthly Plan</span>
                   </div>
@@ -425,7 +424,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
                 </p>
               </div>
 
-              <div className="space-y-2 pt-4 border-t border-[var(--border-light)] text-xs text-[var(--text-primary)]">
+              <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-white/10 text-xs text-[var(--text-primary)]">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'month' ? 'text-indigo-600' : 'text-slate-400'}`} />
                   <span>Unlimited projects & .env vaults</span>
@@ -440,25 +439,24 @@ export default function BillingClient({ usage }: BillingClientProps) {
             {/* Annual Option Card (Featured) */}
             <div
               onClick={() => setSelectedCycle('year')}
-              className={`p-6 rounded-2xl border-2 transition-premium cursor-pointer flex flex-col justify-between relative ${
+              className={`p-6 rounded-2xl border transition-premium cursor-pointer flex flex-col justify-between relative backdrop-blur-md ${
                 selectedCycle === 'year'
-                  ? 'border-[var(--color-primary)] bg-gradient-to-br from-indigo-500/10 via-white/80 to-indigo-500/5 dark:from-indigo-950/30 dark:to-black/40 shadow-md ring-4 ring-indigo-500/15'
-                  : 'border-[var(--border-light)] bg-white/40 dark:bg-black/20 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white/70'
+                  ? 'border-indigo-400/90 bg-white/95 dark:bg-black/40 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-400/20'
+                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 shadow-xs'
               }`}
             >
-              {/* Savings Badge */}
-              <div className="absolute -top-3 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm flex items-center gap-1">
-                <Sparkles className="w-3 h-3 fill-white" />
-                <span>Save 16% • Best Value</span>
+              {/* Savings Badge - Clean typography without AI sparkles */}
+              <div className="absolute -top-3 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
+                Save 16% • Best Value
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      selectedCycle === 'year' ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-slate-300'
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                      selectedCycle === 'year' ? 'bg-indigo-600 text-white shadow-xs' : 'border border-slate-300/80 bg-white/80'
                     }`}>
-                      {selectedCycle === 'year' && <div className="w-2 h-2 rounded-full bg-white" />}
+                      {selectedCycle === 'year' && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
                     <span className="font-bold text-base text-[var(--text-primary)]">Annual Plan</span>
                   </div>
@@ -473,7 +471,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
                 </p>
               </div>
 
-              <div className="space-y-2 pt-4 border-t border-[var(--border-light)] text-xs text-[var(--text-primary)]">
+              <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-white/10 text-xs text-[var(--text-primary)]">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'year' ? 'text-indigo-600' : 'text-slate-400'}`} />
                   <span>Full year (365 days) uninterrupted Pro</span>
@@ -487,7 +485,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
           </div>
 
           {/* Checkout Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-5 pt-6 border-t border-[var(--border-light)]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-5 pt-6 border-t border-slate-100 dark:border-white/10">
             <div className="space-y-1 text-center sm:text-left">
               <div className="text-xs font-semibold text-[var(--text-primary)] flex items-center justify-center sm:justify-start gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
