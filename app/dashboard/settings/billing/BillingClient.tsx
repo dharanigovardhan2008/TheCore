@@ -22,6 +22,7 @@ import {
 import type { Order } from '@/lib/types';
 import { createCheckoutSession } from '@/app/dashboard/actions';
 import { BillingCycle } from '@/lib/plans';
+import PaymentStatusModal from '@/components/ui/PaymentStatusModal';
 
 interface CashfreeSDKInstance {
   checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<void>;
@@ -53,6 +54,8 @@ export default function BillingClient({ usage }: BillingClientProps) {
   const [selectedCycle, setSelectedCycle] = useState<BillingCycle>('year');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [paymentModalState, setPaymentModalState] = useState<'success' | 'failed' | null>(null);
+  const [paymentModalError, setPaymentModalError] = useState<string | null>(null);
 
   const isPro = usage.isPro;
   const isUnlimitedProjects = !Number.isFinite(usage.limits.maxProjects);
@@ -64,6 +67,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
     try {
       setLoading(true);
       setErrorMsg(null);
+      setPaymentModalError(null);
       const session = await createCheckoutSession(cycleToUse);
 
       const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
@@ -99,7 +103,10 @@ export default function BillingClient({ usage }: BillingClientProps) {
       }
     } catch (err: unknown) {
       console.error('Checkout error:', err);
-      setErrorMsg((err as Error)?.message || 'Failed to start payment session.');
+      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+      setErrorMsg(msg);
+      setPaymentModalError(msg);
+      setPaymentModalState('failed');
     } finally {
       setLoading(false);
     }
@@ -615,6 +622,20 @@ export default function BillingClient({ usage }: BillingClientProps) {
           )}
         </div>
       </section>
+
+      {paymentModalState && (
+        <PaymentStatusModal
+          isOpen={true}
+          status={paymentModalState}
+          description={paymentModalError || undefined}
+          onPrimaryClick={() => {
+            setPaymentModalState(null);
+            handleCheckout(selectedCycle);
+          }}
+          onSecondaryClick={() => setPaymentModalState(null)}
+          onClose={() => setPaymentModalState(null)}
+        />
+      )}
     </div>
   );
 }

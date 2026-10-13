@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Zap, Shield, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { PLANS, BillingCycle } from '@/lib/plans';
 import { createCheckoutSession } from '@/app/dashboard/actions';
+import PaymentStatusModal from '@/components/ui/PaymentStatusModal';
 
 interface CashfreeSDKInstance {
   checkout: (opts: { 
@@ -37,6 +38,8 @@ export default function PricingClient({
   const [cycle, setCycle] = useState<BillingCycle>('year');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [paymentModalState, setPaymentModalState] = useState<'success' | 'failed' | null>(null);
+  const [paymentModalError, setPaymentModalError] = useState<string | null>(null);
 
   const freePlan = PLANS.free;
   const proPlan = PLANS.pro;
@@ -51,6 +54,7 @@ export default function PricingClient({
     try {
       setLoading(true);
       setErrorMsg(null);
+      setPaymentModalError(null);
 
       const session = await createCheckoutSession(cycle);
 
@@ -86,7 +90,10 @@ export default function PricingClient({
 
         if (checkoutResult?.error) {
           console.warn('[Cashfree Checkout SDK Error]:', checkoutResult.error);
-          setErrorMsg(checkoutResult.error.message || 'Payment initialization cancelled or failed.');
+          const msg = checkoutResult.error.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+          setErrorMsg(msg);
+          setPaymentModalError(msg);
+          setPaymentModalState('failed');
           setLoading(false);
           return;
         }
@@ -97,7 +104,10 @@ export default function PricingClient({
       }
     } catch (err: unknown) {
       console.error('Upgrade error:', err);
-      setErrorMsg((err as Error)?.message || 'Failed to initialize payment. Please try again.');
+      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+      setErrorMsg(msg);
+      setPaymentModalError(msg);
+      setPaymentModalState('failed');
     } finally {
       setLoading(false);
     }
@@ -359,6 +369,20 @@ export default function PricingClient({
           </div>
         </div>
       </div>
+
+      {paymentModalState && (
+        <PaymentStatusModal
+          isOpen={true}
+          status={paymentModalState}
+          description={paymentModalError || undefined}
+          onPrimaryClick={() => {
+            setPaymentModalState(null);
+            handleUpgrade();
+          }}
+          onSecondaryClick={() => setPaymentModalState(null)}
+          onClose={() => setPaymentModalState(null)}
+        />
+      )}
     </div>
   );
 }
