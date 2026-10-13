@@ -399,38 +399,40 @@ export default function BillingClient({ usage }: BillingClientProps) {
               onClick={() => setSelectedCycle('month')}
               className={`p-6 rounded-2xl border transition-premium cursor-pointer flex flex-col justify-between relative backdrop-blur-md ${
                 selectedCycle === 'month'
-                  ? 'border-indigo-400/90 bg-white/95 dark:bg-black/40 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-400/20'
-                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 shadow-xs'
+                  ? 'bg-[#4C6FFF] text-white shadow-xl shadow-indigo-500/25 border-transparent ring-2 ring-indigo-400/30'
+                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 text-[var(--text-primary)] shadow-xs'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                      selectedCycle === 'month' ? 'bg-indigo-600 text-white shadow-xs' : 'border border-slate-300/80 bg-white/80'
+                      selectedCycle === 'month' ? 'bg-white text-[#4C6FFF] shadow-xs' : 'border border-slate-300/80 bg-white/80 text-slate-400'
                     }`}>
                       {selectedCycle === 'month' && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
-                    <span className="font-bold text-base text-[var(--text-primary)]">Monthly Plan</span>
+                    <span className="font-bold text-base">Monthly Plan</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-2xl font-black text-[var(--text-primary)]">₹99</span>
-                    <span className="text-xs text-[var(--text-secondary)] ml-1">/ month</span>
+                    <span className="text-2xl font-black">₹99</span>
+                    <span className={`text-xs ml-1 ${selectedCycle === 'month' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>/ month</span>
                   </div>
                 </div>
 
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
+                <p className={`text-xs mb-4 ${selectedCycle === 'month' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>
                   Flexible month-to-month access. Extends subscription by 30 days.
                 </p>
               </div>
 
-              <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-white/10 text-xs text-[var(--text-primary)]">
+              <div className={`space-y-2 pt-4 border-t text-xs ${
+                selectedCycle === 'month' ? 'border-white/20 text-white' : 'border-slate-100 dark:border-white/10 text-[var(--text-primary)]'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'month' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'month' ? 'text-white' : 'text-slate-400'}`} />
                   <span>Unlimited projects & .env vaults</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'month' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'month' ? 'text-white' : 'text-slate-400'}`} />
                   <span>Full access for 30 days</span>
                 </div>
               </div>
@@ -441,12 +443,14 @@ export default function BillingClient({ usage }: BillingClientProps) {
               onClick={() => setSelectedCycle('year')}
               className={`p-6 rounded-2xl border transition-premium cursor-pointer flex flex-col justify-between relative backdrop-blur-md ${
                 selectedCycle === 'year'
-                  ? 'border-indigo-400/90 bg-white/95 dark:bg-black/40 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-400/20'
-                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 shadow-xs'
+                  ? 'bg-[#4C6FFF] text-white shadow-xl shadow-indigo-500/25 border-transparent ring-2 ring-indigo-400/30'
+                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 text-[var(--text-primary)] shadow-xs'
               }`}
             >
-              {/* Savings Badge - Clean typography without AI sparkles */}
-              <div className="absolute -top-3 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
+              {/* Savings Badge */}
+              <div className={`absolute -top-3 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs ${
+                selectedCycle === 'year' ? 'bg-white/25 text-white backdrop-blur-sm' : 'bg-emerald-600 text-white'
+              }`}>
                 Save 16% • Best Value
               </div>
 
@@ -454,30 +458,32 @@ export default function BillingClient({ usage }: BillingClientProps) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                      selectedCycle === 'year' ? 'bg-indigo-600 text-white shadow-xs' : 'border border-slate-300/80 bg-white/80'
+                      selectedCycle === 'year' ? 'bg-white text-[#4C6FFF] shadow-xs' : 'border border-slate-300/80 bg-white/80 text-slate-400'
                     }`}>
                       {selectedCycle === 'year' && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
-                    <span className="font-bold text-base text-[var(--text-primary)]">Annual Plan</span>
+                    <span className="font-bold text-base">Annual Plan</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-2xl font-black text-[var(--text-primary)]">₹999</span>
-                    <span className="text-xs text-[var(--text-secondary)] ml-1">/ year</span>
+                    <span className="text-2xl font-black">₹999</span>
+                    <span className={`text-xs ml-1 ${selectedCycle === 'year' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>/ year</span>
                   </div>
                 </div>
 
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
+                <p className={`text-xs mb-4 ${selectedCycle === 'year' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>
                   Billed annually. Extends subscription by 365 days (equivalent to ₹83/month).
                 </p>
               </div>
 
-              <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-white/10 text-xs text-[var(--text-primary)]">
+              <div className={`space-y-2 pt-4 border-t text-xs ${
+                selectedCycle === 'year' ? 'border-white/20 text-white' : 'border-slate-100 dark:border-white/10 text-[var(--text-primary)]'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'year' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'year' ? 'text-white' : 'text-slate-400'}`} />
                   <span>Full year (365 days) uninterrupted Pro</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'year' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'year' ? 'text-white' : 'text-slate-400'}`} />
                   <span>Includes 7-day money-back guarantee</span>
                 </div>
               </div>

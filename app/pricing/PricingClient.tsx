@@ -133,168 +133,212 @@ export default function PricingClient({
           )}
         </div>
 
-        {/* Heading */}
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-4 border border-blue-500/20">
-            Simple, Transparent Pricing
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-            Build and track without limits
+        {/* Heading & Subtitle exactly matching reference */}
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#1E1B4B] dark:text-white mb-3">
+            Simple, transparent pricing
           </h1>
-          <p className="text-[var(--text-content-secondary)] text-sm sm:text-base">
-            Start free with up to 3 projects. Upgrade to Pro when you need unlimited apps, environments, and priority support.
+          <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg font-normal">
+            No contracts. No surprise fees.
           </p>
 
-          {/* Billing Cycle Switcher */}
-          <div className="mt-8 inline-flex items-center p-1 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
+          {/* Billing Cycle Pill Switcher */}
+          <div className="mt-8 inline-flex items-center p-1 rounded-full bg-white dark:bg-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setCycle('month')}
-              className={`px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer ${
+              className={`px-6 py-2 text-xs font-bold tracking-wider uppercase rounded-full transition-all cursor-pointer ${
                 cycle === 'month'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-content)] shadow-sm'
-                  : 'text-[var(--text-content-secondary)] hover:text-[var(--text-content)]'
+                  ? 'bg-[#4C6FFF] text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
-              Monthly billing
+              MONTHLY
             </button>
             <button
               type="button"
               onClick={() => setCycle('year')}
-              className={`px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-6 py-2 text-xs font-bold tracking-wider uppercase rounded-full transition-all cursor-pointer ${
                 cycle === 'year'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-content)] shadow-sm'
-                  : 'text-[var(--text-content-secondary)] hover:text-[var(--text-content)]'
+                  ? 'bg-[#4C6FFF] text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
-              <span>Annual billing</span>
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                Save 16%
-              </span>
+              YEARLY
             </button>
           </div>
         </div>
 
         {errorMsg && (
-          <div className="max-w-md mx-auto mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm text-center">
+          <div className="max-w-md mx-auto mb-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm text-center font-medium">
             {errorMsg}
           </div>
         )}
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-          {/* Free Card */}
-          <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--separator)] p-8 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold">{freePlan.name}</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--bg-grouped)] text-[var(--text-content-secondary)] border border-[var(--separator)]">
-                  {freePlan.badge}
-                </span>
-              </div>
-              <p className="text-sm text-[var(--text-content-secondary)] mb-6 min-h-[40px]">
-                {freePlan.description}
-              </p>
-
-              <div className="mb-6">
-                <span className="text-4xl font-extrabold">₹0</span>
-                <span className="text-sm text-[var(--text-content-secondary)] ml-2">free forever</span>
-              </div>
-
-              <div className="border-t border-[var(--separator)] pt-6 space-y-3 mb-8">
-                {freePlan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-sm">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="text-[var(--text-content-secondary)]">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              {isLoggedIn && !isPro ? (
-                <div className="w-full py-2.5 text-center text-sm font-medium rounded-xl bg-[var(--bg-grouped)] text-[var(--text-content-secondary)] border border-[var(--separator)]">
-                  Current Plan
+        {/* 3-Card Unified Container Matching Exact Screenshot */}
+        <div className="relative max-w-5xl mx-auto mb-16">
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] sm:rounded-[36px] shadow-[0_20px_50px_rgba(70,80,160,0.06)] dark:shadow-none border border-slate-100/90 dark:border-slate-800/80 grid grid-cols-1 lg:grid-cols-3 items-stretch relative">
+            
+            {/* Card 1: Base */}
+            <div className="p-8 sm:p-10 flex flex-col justify-between rounded-t-[32px] lg:rounded-tr-none lg:rounded-l-[32px]">
+              <div>
+                <div className="flex items-baseline mb-4">
+                  <span className="text-4xl font-extrabold text-slate-900 dark:text-white">₹0</span>
+                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1.5">/month</span>
                 </div>
-              ) : (
-                <Link
-                  href={isLoggedIn ? '/dashboard' : '/signup'}
-                  className="block w-full py-2.5 text-center text-sm font-medium rounded-xl bg-[var(--bg-grouped)] hover:bg-[var(--separator)] text-[var(--text-content)] border border-[var(--separator)] transition-colors"
-                >
-                  {isLoggedIn ? 'Go to Dashboard' : 'Get Started Free'}
-                </Link>
-              )}
-            </div>
-          </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Base</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 min-h-[36px] leading-relaxed mb-6">
+                  For solo developers getting started with personal projects and databases.
+                </p>
 
-          {/* Pro Card */}
-          <div className="bg-[var(--bg-surface)] rounded-2xl border border-blue-500/40 ring-1 ring-blue-500/20 p-8 shadow-md relative flex flex-col justify-between">
-            <div className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-sm">
-              Recommended
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  {proPlan.name}
-                  <Zap className="w-4 h-4 text-blue-500 fill-blue-500" />
-                </h3>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                  {proPlan.badge}
-                </span>
-              </div>
-              <p className="text-sm text-[var(--text-content-secondary)] mb-6 min-h-[40px]">
-                {proPlan.description}
-              </p>
-
-              <div className="mb-6">
-                <span className="text-4xl font-extrabold">₹{pricing.amountInRupees}</span>
-                <span className="text-sm text-[var(--text-content-secondary)] ml-2">{pricing.periodLabel}</span>
+                <div className="space-y-3.5 mb-8">
+                  {[
+                    'Up to 3 active projects',
+                    '1 encrypted .env file per project',
+                    'Client-side AES-256 vault',
+                    'To-do tasks & platform tracker',
+                    'Full JSON data export & import',
+                  ].map((feat, idx) => (
+                    <div key={idx} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                      <div className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                      <span className="font-medium text-xs sm:text-sm">{feat}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="border-t border-[var(--separator)] pt-6 space-y-3 mb-8">
-                {proPlan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-sm">
-                    <Check className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                    <span className="text-[var(--text-content)]">{feature}</span>
+              <div>
+                {isLoggedIn && !isPro ? (
+                  <div className="w-full py-3.5 px-6 rounded-full bg-[#F0F3FA] dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider text-center">
+                    Current Plan
                   </div>
-                ))}
+                ) : (
+                  <Link
+                    href={isLoggedIn ? '/dashboard' : '/signup'}
+                    className="block w-full py-3.5 px-6 rounded-full bg-[#F0F3FA] dark:bg-slate-800 hover:bg-[#E4E8F2] dark:hover:bg-slate-700 text-[#475569] dark:text-slate-200 font-bold text-xs uppercase tracking-wider text-center transition-colors"
+                  >
+                    {isLoggedIn ? 'Go to Dashboard' : 'Downgrade'}
+                  </Link>
+                )}
               </div>
             </div>
 
-            <div>
-              {isPro ? (
-                <div className="space-y-2">
-                  <div className="w-full py-2.5 text-center text-sm font-medium rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                    Pro Active {planExpiresAt && `(until ${new Date(planExpiresAt).toLocaleDateString()})`}
+            {/* Card 2: Pro (Center Elevated Hero Card) */}
+            <div className="relative z-10 lg:-my-8 lg:-mx-2 rounded-[28px] sm:rounded-[32px] bg-[#4C6FFF] text-white p-8 sm:p-10 shadow-[0_25px_60px_-15px_rgba(76,111,255,0.5)] flex flex-col justify-between">
+              {/* Most Popular Badge */}
+              <div className="absolute top-6 right-6 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-white/20 text-white backdrop-blur-sm">
+                MOST POPULAR
+              </div>
+
+              <div>
+                <div className="flex items-baseline mb-4">
+                  <span className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
+                    ₹{cycle === 'year' ? '999' : '99'}
+                  </span>
+                  <span className="text-sm font-medium text-white/80 ml-1.5">
+                    {cycle === 'year' ? '/year' : '/month'}
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+                <p className="text-xs text-white/80 min-h-[36px] leading-relaxed mb-6">
+                  For indie hackers & builders who want unlimited projects and encrypted vaults.
+                </p>
+
+                <div className="space-y-3.5 mb-8">
+                  {[
+                    'Unlimited active projects',
+                    'Unlimited encrypted .env files',
+                    'Multi-environment configurations',
+                    'Priority platform & database sync',
+                    'Direct developer support',
+                  ].map((feat, idx) => (
+                    <div key={idx} className="flex items-center gap-3 text-sm text-white">
+                      <div className="w-5 h-5 rounded-full bg-white/25 text-white flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                      <span className="font-medium text-xs sm:text-sm">{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                {isPro ? (
+                  <div className="space-y-2">
+                    <div className="w-full py-2.5 px-4 rounded-full bg-white/20 text-white text-xs font-semibold text-center backdrop-blur-xs">
+                      Pro Active {planExpiresAt && `(until ${new Date(planExpiresAt).toLocaleDateString()})`}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleUpgrade}
+                      disabled={loading}
+                      className="w-full py-3.5 px-6 rounded-full bg-white hover:bg-white/95 text-[#4C6FFF] font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all text-center block cursor-pointer disabled:opacity-50"
+                    >
+                      {loading ? 'Connecting...' : `Extend Pro for ₹${cycle === 'year' ? '999' : '99'}`}
+                    </button>
                   </div>
+                ) : (
                   <button
                     type="button"
                     onClick={handleUpgrade}
                     disabled={loading}
-                    className="w-full py-2 text-center text-xs font-medium rounded-xl bg-[var(--bg-grouped)] hover:bg-[var(--separator)] text-[var(--text-content)] transition-colors cursor-pointer"
+                    className="w-full py-3.5 sm:py-4 px-6 rounded-full bg-white hover:bg-white/95 text-[#4C6FFF] font-bold text-xs sm:text-sm uppercase tracking-wider shadow-lg active:scale-95 transition-all text-center block cursor-pointer disabled:opacity-50"
                   >
-                    {loading ? 'Opening checkout...' : `Extend Pro for ₹${pricing.amountInRupees}`}
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-[#4C6FFF]" />
+                        <span>Opening Cashfree...</span>
+                      </span>
+                    ) : (
+                      'Upgrade'
+                    )}
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleUpgrade}
-                  disabled={loading}
-                  className="w-full py-3 px-4 text-center text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Opening Cashfree Checkout...
-                    </>
-                  ) : (
-                    `Upgrade to Pro — ₹${pricing.amountInRupees}`
-                  )}
-                </button>
-              )}
+                )}
+              </div>
             </div>
+
+            {/* Card 3: Enterprise */}
+            <div className="p-8 sm:p-10 flex flex-col justify-between rounded-b-[32px] lg:rounded-bl-none lg:rounded-r-[32px]">
+              <div>
+                <div className="flex items-baseline mb-4">
+                  <span className="text-4xl font-extrabold text-slate-900 dark:text-white">Custom</span>
+                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1.5">/team</span>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Enterprise</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 min-h-[36px] leading-relaxed mb-6">
+                  For teams and organizations requiring shared vaults, SSO & dedicated support.
+                </p>
+
+                <div className="space-y-3.5 mb-8">
+                  {[
+                    'Everything in Pro included',
+                    'Team workspaces & collaborative vaults',
+                    'Custom platform & cloud integrations',
+                    'Dedicated encryption key escrow',
+                    'Priority 24/7 developer SLA',
+                  ].map((feat, idx) => (
+                    <div key={idx} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                      <div className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                      <span className="font-medium text-xs sm:text-sm">{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <a
+                  href="mailto:billing@thecore.indevs.in?subject=TheCore Enterprise Plan Inquiry"
+                  className="block w-full py-3.5 px-6 rounded-full bg-[#F0F3FA] dark:bg-slate-800 hover:bg-[#E4E8F2] dark:hover:bg-slate-700 text-[#475569] dark:text-slate-200 font-bold text-xs uppercase tracking-wider text-center transition-colors"
+                >
+                  Upgrade
+                </a>
+              </div>
+            </div>
+
           </div>
         </div>
 
