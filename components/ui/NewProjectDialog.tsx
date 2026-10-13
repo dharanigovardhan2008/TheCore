@@ -58,7 +58,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'idea',
-      accent: 'indigo',
+      accent: 'blue',
       stackString: '',
       services: [],
       logo_url: null,
@@ -87,7 +87,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
           live_url: projectToEdit.live_url || '',
           logo_url: projectToEdit.logo_url || null,
           notes: projectToEdit.notes,
-          accent: projectToEdit.accent || 'indigo',
+          accent: projectToEdit.accent || 'blue',
           services: projectToEdit.services?.map(s => ({
             kind: s.kind as any,
             custom_kind: s.custom_kind,
@@ -100,7 +100,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
           name: '',
           description: '',
           status: 'idea',
-          accent: 'indigo',
+          accent: 'blue',
           stackString: '',
           repo_url: '',
           live_url: '',
@@ -155,7 +155,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
       <div className="glass rounded-[var(--radius-modal)] shadow-[var(--shadow-soft)] w-full sm:w-[760px] overflow-hidden flex flex-col max-h-[95dvh] sm:max-h-[90vh] relative z-10 animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-12 duration-500 fill-mode-both">
         
         {/* HEADER */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border-light)] shrink-0 bg-white/40 dark:bg-[#131B2C]/40 backdrop-blur-md sticky top-0 z-20">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border-light)] shrink-0 bg-white/80 backdrop-blur-md sticky top-0 z-20">
           <button 
             type="button" 
             onClick={onClose}
@@ -177,7 +177,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
           <button 
             type="submit" 
             form="new-project-form"
-            className="text-[14px] font-semibold bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 text-white rounded-full px-5 py-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-premium active:scale-95 disabled:opacity-50 disabled:scale-100"
+            className="text-[14px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-full px-5 py-2 shadow-sm transition-premium active:scale-95 disabled:opacity-50 disabled:scale-100"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Saving...' : 'Save'}
@@ -187,11 +187,11 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
         {/* SCROLLABLE CONTENT */}
         <div className="p-6 sm:p-8 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
           {error && (
-            <div className="mb-6 p-4 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="mb-6 p-4 bg-amber-500/10 text-amber-700 rounded-xl text-sm border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{error.replace('PLAN_LIMIT_REACHED: ', '')}</p>
                 {error.includes('PLAN_LIMIT_REACHED') && (
-                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                  <p className="text-xs text-amber-600/80 mt-0.5">
                     Upgrade to TheCore Pro for unlimited projects and .env vaults.
                   </p>
                 )}
@@ -233,7 +233,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                     <input 
                       type="text" 
                       {...register('name')} 
-                      className="w-full h-12 px-4 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium shadow-sm"
+                      className="w-full h-12 px-4 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium shadow-sm"
                       placeholder="Project name"
                     />
                     {errors.name && <p className="text-[var(--color-danger)] text-xs mt-2 font-medium">{errors.name.message}</p>}
@@ -244,7 +244,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                       <label className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Status</label>
                       <select 
                         {...register('status')} 
-                        className="w-full h-12 px-4 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium appearance-none shadow-sm font-medium"
+                        className="w-full h-12 px-4 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium appearance-none shadow-sm font-medium"
                       >
                         <option value="idea">💡 Idea</option>
                         <option value="in_progress">▶️ In Progress</option>
@@ -258,7 +258,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                       <input 
                         type="text" 
                         {...register('stackString')} 
-                        className="w-full h-12 px-4 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium shadow-sm"
+                        className="w-full h-12 px-4 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium shadow-sm"
                         placeholder="React, Next.js, Supabase"
                       />
                       {watch('stackString') && (
@@ -277,7 +277,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                 <label className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Description</label>
                 <textarea 
                   {...register('description')} 
-                  className="w-full h-24 px-4 py-3 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium resize-none shadow-sm"
+                  className="w-full h-24 px-4 py-3 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium resize-none shadow-sm"
                   placeholder="What is this project about?"
                 />
               </div>
@@ -288,7 +288,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                     <input 
                       type="url" 
                       {...register('repo_url')} 
-                      className="w-full h-12 px-4 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium shadow-sm"
+                      className="w-full h-12 px-4 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium shadow-sm"
                       placeholder="https://github.com/..."
                     />
                     {errors.repo_url && <p className="text-[var(--color-danger)] text-xs mt-2 font-medium">{errors.repo_url.message}</p>}
@@ -299,7 +299,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                     <input 
                       type="url" 
                       {...register('live_url')} 
-                      className="w-full h-12 px-4 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium shadow-sm"
+                      className="w-full h-12 px-4 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium shadow-sm"
                       placeholder="https://..."
                     />
                     {errors.live_url && <p className="text-[var(--color-danger)] text-xs mt-2 font-medium">{errors.live_url.message}</p>}
@@ -317,11 +317,11 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                 {fields.map((field, index) => {
                   const currentKind = watchedServices?.[index]?.kind;
                   return (
-                    <div key={field.id} className="flex gap-3 items-center glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] p-3 rounded-[var(--radius-btn)] flex-col sm:flex-row group shadow-sm hover:shadow-[var(--shadow-sm)] transition-premium">
+                    <div key={field.id} className="flex gap-3 items-center bg-white hover:bg-white/90 border border-[var(--border-light)] p-3 rounded-[var(--radius-btn)] flex-col sm:flex-row group shadow-sm transition-premium">
                       <div className="flex-1 flex flex-col sm:flex-row gap-3 w-full">
                         <select 
                           {...register(`services.${index}.kind`)}
-                          className="w-full sm:w-[130px] h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium appearance-none font-medium"
+                          className="w-full sm:w-[130px] h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:border-blue-500 transition-premium appearance-none font-medium"
                         >
                           <option value="frontend">Frontend</option>
                           <option value="backend">Backend</option>
@@ -335,7 +335,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                             type="text" 
                             {...register(`services.${index}.custom_kind`)} 
                             placeholder="Type"
-                            className="w-full sm:w-[110px] h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium"
+                            className="w-full sm:w-[110px] h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:border-blue-500 transition-premium"
                           />
                         )}
 
@@ -345,7 +345,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                             {...register(`services.${index}.platform`)} 
                             list={`platforms-${index}`}
                             placeholder="Platform"
-                            className="w-full h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium font-medium"
+                            className="w-full h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:border-blue-500 transition-premium font-medium"
                           />
                           <datalist id={`platforms-${index}`}>
                             {PLATFORM_SUGGESTIONS.map(p => <option key={p} value={p} />)}
@@ -358,7 +358,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                             {...register(`services.${index}.login_email`)}
                             list={`emails-${index}`}
                             placeholder="user@email.com"
-                            className="w-full h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium"
+                            className="w-full h-10 px-3 bg-[var(--bg-surface)] text-sm border border-[var(--border-light)] rounded-lg text-[var(--text-primary)] outline-none focus:border-blue-500 transition-premium"
                           />
                           {(errors.services?.[index]?.login_email || errors.services?.[index]?.platform || errors.services?.[index]?.custom_kind) && (
                             <p className="text-[var(--color-danger)] text-[11px] absolute -bottom-4 left-0 font-medium">Invalid field(s)</p>
@@ -381,7 +381,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                 <button 
                   type="button" 
                   onClick={() => append({ kind: 'frontend', custom_kind: '', platform: '', login_email: '' })}
-                  className="inline-flex items-center justify-center gap-2 text-sm font-semibold glass hover:bg-white/40 dark:hover:bg-black/40 text-[var(--text-secondary)] hover:text-[var(--color-primary)] border border-dashed border-[var(--border-color)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)] w-full py-4 rounded-[var(--radius-btn)] transition-premium"
+                  className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-white hover:bg-white/90 text-[var(--text-secondary)] hover:text-[var(--color-primary)] border border-dashed border-[var(--border-color)] hover:border-[var(--color-primary)] w-full py-4 rounded-[var(--radius-btn)] transition-premium"
                 >
                   <Plus size={18} className="stroke-[2.5]" /> Add Platform
                 </button>
@@ -396,7 +396,7 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
               
               <textarea 
                 {...register('notes')} 
-                className="w-full h-28 px-4 py-3 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium resize-none shadow-sm"
+                className="w-full h-28 px-4 py-3 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium resize-none shadow-sm"
                 placeholder="Any important setup instructions or quick notes..."
               />
             </div>

@@ -353,3 +353,195 @@ export async function getAdminAuditLogs(limit: number = 50) {
   return data || [];
 }
 
+/**
+ * Fetch all plan configurations (active and inactive)
+ */
+export async function getAdminPlanConfigs() {
+  const { adminDb } = await assertAdmin();
+
+  const { data, error } = await adminDb
+    .from('plan_configs')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
+  if (error || !data || data.length === 0) {
+    // Return default initial list if table isn't populated yet
+    return [
+      {
+        id: 'free',
+        name: 'Free',
+        badge: 'Starter',
+        description: 'Perfect for students and developers getting started with personal projects.',
+        price_month_rupees: 0,
+        price_year_rupees: 0,
+        discount_percent: 0,
+        discount_label: 'Free Forever',
+        max_projects: 3,
+        max_env_files: 1,
+        features: [
+          'Up to 3 active projects',
+          '1 encrypted .env file per project',
+          'Client-side AES-256-GCM vault',
+          'To-do task manager & platform tracker',
+          'Full JSON data export & import',
+          'Dark and light mode support',
+        ],
+        is_active: true,
+        is_featured: false,
+        sort_order: 0,
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        badge: 'Unlimited',
+        description: 'For freelancers, indie hackers, and professional builders managing multiple apps.',
+        price_month_rupees: 99,
+        price_year_rupees: 999,
+        discount_percent: 16,
+        discount_label: 'Save 16%',
+        max_projects: null,
+        max_env_files: null,
+        features: [
+          'Unlimited projects',
+          'Unlimited encrypted .env files per project',
+          'Multi-environment configurations (.env, .env.local, .env.prod)',
+          'Priority platform and database sync',
+          'Direct developer support',
+          'Early access to new features',
+        ],
+        is_active: true,
+        is_featured: true,
+        sort_order: 1,
+      },
+    ];
+  }
+
+  return data;
+}
+
+/**
+ * Update an existing plan configuration (price, discounts, limits, features)
+ */
+export async function updatePlanConfig(
+  planId: string,
+  updates: {
+    name?: string;
+    badge?: string;
+    description?: string;
+    price_month_rupees?: number;
+    price_year_rupees?: number;
+    discount_percent?: number;
+    discount_label?: string | null;
+    max_projects?: number | null;
+    max_env_files?: number | null;
+    features?: string[];
+    is_active?: boolean;
+    is_featured?: boolean;
+  }
+) {
+  const { adminId, adminDb } = await assertAdmin();
+  checkRateLimit(adminId);
+
+  const { error } = await adminDb
+    .from('plan_configs')
+    .upsert({
+      id: planId,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+
+  if (error) throw error;
+
+  await logAdminAction(adminDb, adminId, 'update_plan_config', null, {
+    planId,
+    ...updates,
+  });
+
+  revalidatePath('/admin/plans');
+  revalidatePath('/pricing');
+  revalidatePath('/dashboard/settings/billing');
+
+  return { success: true };
+}
+
+/**
+ * Create a new plan tier
+ */
+export async function createPlanConfig(planData: {
+  id: string;
+  name: string;
+  badge?: string;
+  description?: string;
+  price_month_rupees: number;
+  price_year_rupees: number;
+  discount_percent?: number;
+  discount_label?: string | null;
+  max_projects?: number | null;
+  max_env_files?: number | null;
+  features?: string[];
+  is_featured?: boolean;
+}) {
+  const { adminId, adminDb } = await assertAdmin();
+  checkRateLimit(adminId);
+
+  const cleanId = planData.id.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  if (!cleanId) throw new Error('A valid unique plan identifier is required.');
+
+  const { error } = await adminDb
+    .from('plan_configs')
+    .insert({
+      id: cleanId,
+      name: planData.name,
+      badge: planData.badge || '',
+      description: planData.description || '',
+      price_month_rupees: planData.price_month_rupees,
+      price_year_rupees: planData.price_year_rupees,
+      discount_percent: planData.discount_percent || 0,
+      discount_label: planData.discount_label || '',
+      max_projects: planData.max_projects ?? null,
+      max_env_files: planData.max_env_files ?? null,
+      features: planData.features || [],
+      is_active: true,
+      is_featured: planData.is_featured || false,
+      sort_order: 10,
+    });
+
+  if (error) throw error;
+
+  await logAdminAction(adminDb, adminId, 'create_plan_config', null, {
+    planId: cleanId,
+    name: planData.name,
+  });
+
+  revalidatePath('/admin/plans');
+  revalidatePath('/pricing');
+  revalidatePath('/dashboard/settings/billing');
+
+  return { success: true, planId: cleanId };
+}
+
+/**
+ * Toggle plan active status
+ */
+export async function togglePlanActive(planId: string, isActive: boolean) {
+  const { adminId, adminDb } = await assertAdmin();
+  checkRateLimit(adminId);
+
+  const { error } = await adminDb
+    .from('plan_configs')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', planId);
+
+  if (error) throw error;
+
+  await logAdminAction(adminDb, adminId, isActive ? 'activate_plan' : 'deactivate_plan', null, {
+    planId,
+  });
+
+  revalidatePath('/admin/plans');
+  revalidatePath('/pricing');
+  revalidatePath('/dashboard/settings/billing');
+
+  return { success: true };
+}
+

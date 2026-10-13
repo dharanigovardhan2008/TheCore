@@ -42,12 +42,12 @@ export function getAccentTokens(accentValue: string | null) {
   const ACCENTS: Record<string, string> = {
     pink: "#FFC3E3",
     blue: "#CDEEFB",
-    indigo: "#5B3FD1",
+    indigo: "#2563EB",
     orange: "#FF7A2F",
   };
   
-  const defaultColor = "#5B3FD1";
-  const baseHex = ACCENTS[accentValue || "indigo"] || defaultColor;
+  const defaultColor = "#2563EB";
+  const baseHex = ACCENTS[accentValue || "blue"] || defaultColor;
   const baseRgb = hexToRgb(baseHex);
   
   // Tint is 12% opacity over white

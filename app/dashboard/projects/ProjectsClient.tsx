@@ -33,14 +33,14 @@ export default function ProjectsClient({ projects, services, todos = [], envFile
         </div>
         <button 
           onClick={() => setIsNewProjectOpen(true)}
-          className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white rounded-full font-semibold shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium"
+          className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full font-semibold shadow-[0_8px_16px_rgba(37,99,235,0.25)] transition-premium"
         >
           <Plus className="w-4 h-4" />
           New Project
         </button>
         <button 
           onClick={() => setIsNewProjectOpen(true)}
-          className="sm:hidden flex shrink-0 items-center justify-center w-12 h-12 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white rounded-full shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium"
+          className="sm:hidden flex shrink-0 items-center justify-center w-12 h-12 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-[0_8px_16px_rgba(37,99,235,0.25)] transition-premium"
           aria-label="New Project"
         >
           <Plus className="w-6 h-6 stroke-[2.5]" />
@@ -56,7 +56,7 @@ export default function ProjectsClient({ projects, services, todos = [], envFile
             placeholder="Search projects..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-surface border border-[var(--border-light)] rounded-[var(--radius-card)] focus:outline-none focus:border-gray-400 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] shadow-sm"
+            className="w-full pl-9 pr-4 py-2 bg-surface border border-[var(--border-light)] rounded-[var(--radius-card)] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] shadow-sm"
           />
         </div>
         

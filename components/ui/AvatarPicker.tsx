@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Upload, X, Check, Sparkles, Image as ImageIcon, Camera } from "lucide-react";
+import { Upload, X, Check, Sparkles, Camera } from "lucide-react";
 
-// List of all 50 Pixar-style 3D avatars available in public/avatars/
-export const DEFAULT_AVATARS = Array.from({ length: 50 }, (_, i) => `/avatars/avatar-${i + 1}.png`);
+// List of all 20 premium 3D avatars available in public/avatars/
+export const DEFAULT_AVATARS = Array.from({ length: 20 }, (_, i) => `/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`);
 
 interface AvatarPickerProps {
   value: string | null;
   onChange: (url: string | null) => void;
   label?: string;
   nameFallback?: string;
+  variant?: "default" | "compact";
 }
 
 export default function AvatarPicker({
@@ -18,6 +19,7 @@ export default function AvatarPicker({
   onChange,
   label = "Profile Photo",
   nameFallback = "User",
+  variant = "default",
 }: AvatarPickerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -91,18 +93,101 @@ export default function AvatarPicker({
 
   const currentAvatar = value || DEFAULT_AVATARS[0];
 
+  if (variant === "compact") {
+    return (
+      <div className="space-y-3">
+        {label && (
+          <label className="block text-sm font-semibold text-[var(--text-primary)]">
+            {label}
+          </label>
+        )}
+
+        <div className="flex items-start gap-6">
+          {/* Avatar Preview */}
+          <div className="relative shrink-0">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-100 border-2 border-[var(--border-light)]">
+              {currentAvatar ? (
+                <img
+                  src={currentAvatar}
+                  alt="Profile avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-2xl font-bold">
+                  {nameFallback?.charAt(0)?.toUpperCase() || "U"}
+                </div>
+              )}
+            </div>
+            <label className="absolute -bottom-1 -right-1 p-2 rounded-full bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-colors cursor-pointer">
+              <Camera className="w-3.5 h-3.5" />
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleCustomUpload}
+                className="hidden"
+                disabled={isUploading}
+              />
+            </label>
+          </div>
+
+          {/* Avatar Actions */}
+          <div className="flex-1 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                Choose Avatar
+              </button>
+              <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">
+                <Upload className="w-4 h-4" />
+                {isUploading ? 'Uploading...' : 'Upload Photo'}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleCustomUpload}
+                  className="hidden"
+                  disabled={isUploading}
+                />
+              </label>
+            </div>
+
+            <p className="text-xs text-[var(--text-secondary)]">
+              Choose from 20 premium 3D avatars or upload your own image (max 5MB)
+            </p>
+
+            {uploadError && (
+              <p className="text-xs text-rose-500 font-medium">{uploadError}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          onChange={handleCustomUpload}
+          className="hidden"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {label && (
-        <label className="block text-sm font-medium text-slate-800 dark:text-slate-200">
+        <label className="block text-sm font-medium text-[#172B2A]">
           {label}
         </label>
       )}
 
       {/* Main Avatar Preview & Actions Row */}
-      <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/80 dark:bg-black/30 border border-slate-200/80 shadow-xs">
+      <div className="flex items-center gap-4 p-3 rounded-2xl bg-white border border-[#DCE9E3] shadow-xs">
         <div className="relative group shrink-0">
-          <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full overflow-hidden border-2 border-indigo-500/40 shadow-sm bg-slate-100 flex items-center justify-center">
+          <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full overflow-hidden border-2 border-blue-500/40 shadow-sm bg-slate-100 flex items-center justify-center">
             {value ? (
               <img
                 src={value}
@@ -110,7 +195,7 @@ export default function AvatarPicker({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center text-xl font-bold uppercase">
+              <div className="w-full h-full bg-gradient-to-tr from-blue-600 to-sky-400 text-white flex items-center justify-center text-xl font-bold uppercase">
                 {nameFallback?.charAt(0) || "U"}
               </div>
             )}
@@ -120,7 +205,7 @@ export default function AvatarPicker({
             onClick={() => fileInputRef.current?.click()}
             title="Upload custom photo"
             aria-label="Upload custom photo"
-            className="absolute bottom-0 right-0 p-1.5 rounded-full bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-transform active:scale-90"
+            className="absolute bottom-0 right-0 p-1.5 rounded-full bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-transform active:scale-90"
           >
             <Camera className="w-3.5 h-3.5" />
           </button>
@@ -131,9 +216,9 @@ export default function AvatarPicker({
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/70 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/70 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               Choose 3D Avatar
             </button>
 
@@ -160,7 +245,7 @@ export default function AvatarPicker({
           </div>
 
           <p className="text-[11px] text-slate-500 truncate">
-            Pick from 50 default 3D avatars or upload your custom image.
+            Pick from 20 premium 3D avatars or upload your custom image.
           </p>
 
           {uploadError && (
@@ -178,64 +263,25 @@ export default function AvatarPicker({
         className="hidden"
       />
 
-      {/* Quick Select Thumbnails (Top 6) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
-        <span className="text-[11px] text-slate-400 font-medium shrink-0">Popular:</span>
-        {DEFAULT_AVATARS.slice(0, 7).map((avatarPath, index) => {
-          const isSelected = value === avatarPath;
-          return (
-            <button
-              key={avatarPath}
-              type="button"
-              onClick={() => onChange(avatarPath)}
-              aria-label={`Select avatar ${index + 1}`}
-              className={`relative shrink-0 w-9 h-9 rounded-full overflow-hidden transition-all ${
-                isSelected
-                  ? "ring-2 ring-indigo-600 ring-offset-2 scale-105"
-                  : "opacity-80 hover:opacity-100 hover:scale-105"
-              }`}
-            >
-              <img
-                src={avatarPath}
-                alt={`Avatar ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-              {isSelected && (
-                <div className="absolute inset-0 bg-indigo-600/30 flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                </div>
-              )}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline shrink-0 px-1"
-        >
-          View all 50 →
-        </button>
-      </div>
-
-      {/* Full 50-Avatar Gallery Modal */}
+      {/* Full 20-Avatar Gallery Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="max-w-2xl w-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl border border-[#DCE9E3] max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="p-5 sm:p-6 border-b border-[#DCE9E3] flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-lg font-bold text-[#172B2A] flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-blue-600" />
                   Select Your 3D Avatar
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Choose from 50 handcrafted 3D character avatars
+                <p className="text-xs text-[#647570] mt-0.5">
+                  Choose from 20 premium 3D character avatars
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+                className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -256,8 +302,8 @@ export default function AvatarPicker({
                     }}
                     className={`group relative aspect-square rounded-2xl overflow-hidden border-2 transition-all p-0.5 ${
                       isSelected
-                        ? "border-indigo-600 ring-2 ring-indigo-500/40 scale-105 shadow-md bg-indigo-50"
-                        : "border-transparent hover:border-slate-300 dark:hover:border-slate-700 hover:scale-105 bg-slate-50 dark:bg-slate-800"
+                        ? "border-blue-600 ring-2 ring-blue-500/40 scale-105 shadow-md bg-blue-50"
+                        : "border-transparent hover:border-slate-300 hover:scale-105 bg-slate-50"
                     }`}
                   >
                     <img
@@ -267,7 +313,7 @@ export default function AvatarPicker({
                       loading="lazy"
                     />
                     {isSelected && (
-                      <div className="absolute inset-0 bg-indigo-600/35 rounded-xl flex items-center justify-center">
+                      <div className="absolute inset-0 bg-blue-600/35 rounded-xl flex items-center justify-center">
                         <Check className="w-5 h-5 text-white stroke-[3] drop-shadow-sm" />
                       </div>
                     )}
@@ -277,14 +323,14 @@ export default function AvatarPicker({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 flex items-center justify-between">
-              <span className="text-xs text-slate-500">
-                50 avatars available
+            <div className="p-4 border-t border-[#DCE9E3] bg-[#F4FAF7] flex items-center justify-between">
+              <span className="text-xs text-[#647570]">
+                20 premium avatars available
               </span>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
               >
                 Done
               </button>

@@ -35,8 +35,8 @@ export default async function AdminOverviewPage() {
       value: stats.totalProjects,
       sub: 'Across all user workspaces',
       icon: FolderGit2,
-      color: 'text-purple-500',
-      bg: 'bg-purple-500/10',
+      color: 'text-blue-600',
+      bg: 'bg-blue-500/10',
     },
   ];
 
@@ -104,7 +104,7 @@ export default async function AdminOverviewPage() {
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
                       u.plan === 'pro'
-                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        ? 'bg-blue-500/10 text-blue-600'
                         : 'bg-[var(--bg-grouped)] text-[var(--text-content-secondary)]'
                     }`}
                   >
@@ -152,7 +152,7 @@ export default async function AdminOverviewPage() {
                     <span
                       className={`inline-block px-1.5 py-0.2 rounded-full text-[10px] font-semibold capitalize mt-0.5 ${
                         o.status === 'paid'
-                          ? 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-emerald-600'
                           : o.status === 'created'
                           ? 'text-amber-600'
                           : 'text-red-600'

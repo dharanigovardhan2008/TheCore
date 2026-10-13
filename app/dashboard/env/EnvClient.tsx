@@ -86,13 +86,13 @@ export default function EnvClient({ envFiles, projects }: EnvClientProps) {
               placeholder="Search .env files..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 sm:h-10 glass pl-10 pr-4 rounded-[var(--radius-btn)] border border-[var(--border-light)] focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 focus:border-transparent text-base sm:text-sm transition-all"
+              className="w-full h-10 sm:h-10 glass pl-10 pr-4 rounded-[var(--radius-btn)] border border-[var(--border-light)] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-base sm:text-sm transition-all"
             />
           </div>
           <button 
             onClick={() => setIsAddModalOpen(true)}
             disabled={isLocked}
-            className="flex-1 sm:flex-none h-11 sm:h-10 px-4 justify-center bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8]/90 disabled:opacity-50 text-white rounded-[var(--radius-btn)] text-sm font-medium transition-colors flex items-center gap-2"
+            className="flex-1 sm:flex-none h-11 sm:h-10 px-4 justify-center bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-500/20 disabled:opacity-50 text-white rounded-[var(--radius-btn)] text-sm font-medium transition-colors flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add .env file
@@ -164,7 +164,7 @@ function LockedState({ filteredFiles, projects, onUnlock }: { filteredFiles: Env
             </p>
             <button
               onClick={onUnlock}
-              className="h-12 px-8 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-premium active:scale-95 text-white rounded-full text-[15px] font-semibold flex items-center gap-2"
+              className="h-12 px-8 bg-blue-600 hover:bg-blue-700 hover:scale-105 shadow-[0_4px_12px_rgba(37,99,235,0.25)] transition-premium active:scale-95 text-white rounded-full text-[15px] font-semibold flex items-center gap-2"
             >
               <Lock className="w-4 h-4" />
               Unlock Vault
@@ -491,7 +491,7 @@ function FileViewModal({ file, initialContent, onClose, masterPassword }: { file
                         <button
                             onClick={handleSave}
                             disabled={saving || content === initialContent}
-                            className="flex-1 sm:flex-none justify-center px-4 sm:px-6 py-3 sm:py-2 rounded-[var(--radius-btn)] font-semibold bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-premium active:scale-95 text-white transition-opacity flex items-center gap-2 disabled:opacity-50"
+                            className="flex-1 sm:flex-none justify-center px-4 sm:px-6 py-3 sm:py-2 rounded-[var(--radius-btn)] font-semibold bg-blue-600 hover:bg-blue-700 hover:scale-105 shadow-[0_4px_12px_rgba(37,99,235,0.25)] transition-premium active:scale-95 text-white transition-opacity flex items-center gap-2 disabled:opacity-50"
                         >
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             {saving ? 'Saving...' : 'Save'}

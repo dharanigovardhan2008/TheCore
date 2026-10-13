@@ -4,25 +4,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  CreditCard,
-  Zap,
-  CheckCircle2,
-  ArrowUpRight,
   ArrowLeft,
-  ArrowRight,
-  Check,
   Download,
   AlertCircle,
   Loader2,
-  Calendar,
-  Layers,
-  FileCode,
-  ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import type { Order } from '@/lib/types';
 import { createCheckoutSession } from '@/app/dashboard/actions';
 import { BillingCycle } from '@/lib/plans';
 import PaymentStatusModal from '@/components/ui/PaymentStatusModal';
+import PricingCard from '@/components/ui/PricingCard';
 
 interface CashfreeSDKInstance {
   checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<void>;
@@ -46,26 +38,37 @@ interface BillingClientProps {
       maxEnvFilesPerProject: number;
     };
     orders: Order[];
+    planConfigs?: any[];
   };
 }
 
 export default function BillingClient({ usage }: BillingClientProps) {
   const router = useRouter();
-  const [selectedCycle, setSelectedCycle] = useState<BillingCycle>('year');
-  const [loading, setLoading] = useState(false);
+  const [loadingCycle, setLoadingCycle] = useState<BillingCycle | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [paymentModalState, setPaymentModalState] = useState<'success' | 'failed' | null>(null);
   const [paymentModalError, setPaymentModalError] = useState<string | null>(null);
 
+  const proConfig = usage.planConfigs?.find((p: any) => p.id === 'pro');
+  const proMonthPrice = proConfig?.price_month_rupees ?? 99;
+  const proYearPrice = proConfig?.price_year_rupees ?? 999;
+  const proDiscountLabel = proConfig?.discount_label || (proConfig?.discount_percent ? `Save ${proConfig.discount_percent}%` : 'Save 16%');
+
   const isPro = usage.isPro;
   const isUnlimitedProjects = !Number.isFinite(usage.limits.maxProjects);
-  const projectPct = isUnlimitedProjects
-    ? 15
-    : Math.min(100, Math.round((usage.projectCount / usage.limits.maxProjects) * 100));
+
+  const proFeatures = [
+    'Unlimited projects',
+    'Unlimited encrypted .env files',
+    'Multi-environment configurations',
+    'Priority platform & database sync',
+    'Direct developer support',
+    'Early access to new features',
+  ];
 
   const handleCheckout = async (cycleToUse: BillingCycle) => {
     try {
-      setLoading(true);
+      setLoadingCycle(cycleToUse);
       setErrorMsg(null);
       setPaymentModalError(null);
       const session = await createCheckoutSession(cycleToUse);
@@ -108,7 +111,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
       setPaymentModalError(msg);
       setPaymentModalState('failed');
     } finally {
-      setLoading(false);
+      setLoadingCycle(null);
     }
   };
 
@@ -186,443 +189,307 @@ export default function BillingClient({ usage }: BillingClientProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-16 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Navigation & Header */}
-      <div>
-        <Link
-          href="/dashboard/settings"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors group mb-3"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
-          <span>Settings</span>
-          <span className="text-[var(--text-tertiary)]">/</span>
-          <span className="text-[var(--text-primary)] font-medium">Billing & Plans</span>
-        </Link>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      {/* Back Navigation */}
+      <Link
+        href="/dashboard/settings"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-6 group"
+      >
+        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+        Settings
+      </Link>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">Billing & Plans</h1>
-            <p className="text-sm text-[var(--text-secondary)] mt-1">
-              Manage your subscription tier, resource quotas, and Cashfree invoices.
-            </p>
-          </div>
-          <Link
-            href="/pricing"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full glass hover:bg-white/90 dark:hover:bg-black/50 text-xs font-semibold text-indigo-600 border border-white/80 shadow-xs transition-premium self-start sm:self-auto group"
-          >
-            <span>Compare all plan features</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-indigo-400 group-hover:text-indigo-600 transition-colors" />
-          </Link>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+        <div>
+          <h1 className="text-[32px] font-bold text-[var(--text-primary)] tracking-tight mb-2">
+            Billing & Plans
+          </h1>
+          <p className="text-[15px] text-[var(--text-secondary)]">
+            Manage your subscription, resource limits, and payment history
+          </p>
         </div>
+        <Link
+          href="/pricing"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors group self-start sm:self-auto"
+        >
+          Compare plans
+          <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </Link>
       </div>
 
+      {/* Error Message */}
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm flex items-center gap-3 shadow-xs animate-in fade-in">
-          <AlertCircle className="w-5 h-5 shrink-0" />
-          <span className="font-medium">{errorMsg}</span>
+        <div className="mb-8 p-4 rounded-[20px] bg-red-50 border border-red-200 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-900">{errorMsg}</p>
+          </div>
         </div>
       )}
 
-      {/* Hero Current Subscription Card */}
-      <section>
-        <div className="glass rounded-[var(--radius-panel)] p-6 sm:p-8 shadow-[var(--shadow-soft)] relative overflow-hidden border border-white/80 dark:border-white/10">
-          {/* Ambient Lighting Aura */}
-          <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-blue-500/15 blur-3xl pointer-events-none" />
+      <div className="space-y-10">
+        {/* Current Subscription Overview */}
+        <section>
+          <h2 className="text-[22px] font-semibold text-[var(--text-primary)] mb-5">
+            Current Subscription
+          </h2>
 
-          {/* Top Status Row */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8 relative z-10">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                <span>Current Plan</span>
-                <span>•</span>
-                <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Active
-                </span>
-              </div>
+          <div className="bg-gradient-to-br from-[#F4FAF7] to-white rounded-[24px] border border-[var(--border-light)] p-6 sm:p-8 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left: Plan Details */}
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-[26px] font-bold text-[var(--text-primary)]">
+                      TheCore {isPro ? 'Pro' : 'Free'}
+                    </h3>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      isPro
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isPro ? 'bg-blue-500' : 'bg-slate-500'}`} />
+                      Active
+                    </span>
+                  </div>
+                  <p className="text-[15px] text-[var(--text-secondary)]">
+                    {isPro ? 'Unlimited Pro' : 'Free Tier'}
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
-                  {isPro ? 'TheCore Pro' : 'Free Starter'}
-                </h2>
-                {isPro ? (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 flex items-center gap-1.5 shadow-2xs">
-                    <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                    Unlimited Pro
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-200/80 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/40">
-                    Free Tier
-                  </span>
+                {isPro && usage.plan_expires_at && (
+                  <div className="pt-4 border-t border-[var(--border-light)]">
+                    <p className="text-sm text-[var(--text-secondary)] mb-1">Plan Expires</p>
+                    <p className="text-base font-semibold text-[var(--text-primary)]">
+                      {new Date(usage.plan_expires_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
                 )}
               </div>
 
-              <p className="text-sm text-[var(--text-secondary)] max-w-xl">
-                {isPro
-                  ? 'Unlimited project spaces, client-side encrypted .env vaults, and instant platform syncing.'
-                  : 'Free tier: up to 3 projects and 1 encrypted .env file per project. Upgrade anytime.'}
-              </p>
-            </div>
-
-            {/* Expiration or Upgrade CTA */}
-            <div className="shrink-0">
-              {isPro ? (
-                <div className="flex items-center gap-3.5 p-3.5 sm:px-5 sm:py-3.5 rounded-2xl bg-white/70 dark:bg-black/30 border border-white/80 dark:border-white/10 shadow-xs backdrop-blur-md">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                      Access Expires On
+              {/* Right: Resources & Security */}
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-secondary)] mb-3">Resources</p>
+                  <div className="space-y-2.5 text-[15px] text-[var(--text-primary)]">
+                    <div className="flex items-center justify-between">
+                      <span>Projects</span>
+                      <span className="font-semibold">
+                        {usage.projectCount} / {isUnlimitedProjects ? '∞' : usage.limits.maxProjects}
+                      </span>
                     </div>
-                    <div className="text-sm font-extrabold text-[var(--text-primary)]">
-                      {usage.plan_expires_at
-                        ? new Date(usage.plan_expires_at).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })
-                        : 'Permanent Access'}
+                    <div className="flex items-center justify-between">
+                      <span>Vault Files</span>
+                      <span className="font-semibold">
+                        {isPro ? 'Unlimited' : '1 per project'}
+                      </span>
                     </div>
+                    {isPro && (
+                      <div className="flex items-center justify-between">
+                        <span>Environments</span>
+                        <span className="font-medium text-sm">.env, .env.local, .env.prod</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleCheckout('year')}
-                  disabled={loading}
-                  className="px-6 py-3 rounded-[var(--radius-btn)] bg-gradient-to-r from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white text-xs font-bold uppercase tracking-wider shadow-[0_4px_16px_rgba(79,70,229,0.35)] transition-premium flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 fill-white" />}
-                  <span>Upgrade to Pro</span>
-                </button>
-              )}
+
+                <div className="pt-4 border-t border-[var(--border-light)]">
+                  <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">Security</p>
+                  <p className="text-sm text-[var(--text-primary)]">
+                    AES-256-GCM encryption
+                  </p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
+                    Zero-knowledge architecture
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Quota & Feature Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-100 dark:border-white/10 relative z-10">
-            {/* Active Projects Metric */}
-            <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/20 border border-white/80 dark:border-white/10 shadow-2xs backdrop-blur-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                      <Layers className="w-3.5 h-3.5" />
-                    </div>
-                    Projects
-                  </span>
-                  <span className="text-xs font-extrabold text-[var(--text-primary)]">
-                    {usage.projectCount} <span className="font-normal text-[var(--text-tertiary)]">/ {isUnlimitedProjects ? '∞' : usage.limits.maxProjects}</span>
-                  </span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-200/60 dark:bg-slate-800 overflow-hidden mb-2">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isUnlimitedProjects
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600'
-                        : projectPct >= 100
-                        ? 'bg-amber-500'
-                        : 'bg-emerald-500'
-                    }`}
-                    style={{ width: `${projectPct}%` }}
-                  />
+        {/* Subscription Extension */}
+        <section>
+          <h2 className="text-[22px] font-semibold text-[var(--text-primary)] mb-5">
+            {isPro ? 'Extend Subscription' : 'Upgrade to Pro'}
+          </h2>
+
+          {/* Three-Card Pricing Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+
+            {/* Free Plan (Info Only) */}
+            <div className="rounded-[28px] border border-[#DCE9E3] bg-white p-6 shadow-sm opacity-60">
+              <div className="mb-5">
+                <h3 className="text-xl font-bold text-[#172B2A] mb-2">Free</h3>
+                <p className="text-xs text-[#647570] leading-relaxed min-h-[36px]">
+                  Your current plan if not Pro
+                </p>
+              </div>
+
+              <div className="mb-5">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-[#172B2A]">₹0</span>
+                  <span className="text-sm text-[#647570]">/forever</span>
                 </div>
               </div>
-              <p className="text-[11px] text-[var(--text-secondary)] font-medium">
-                {isUnlimitedProjects ? 'Unlimited project spaces available' : `${usage.limits.maxProjects - usage.projectCount} projects remaining on Free`}
+
+              <div className="h-px w-full bg-[#DCE9E3] mb-5" />
+
+              <p className="text-sm text-[#647570]">
+                Up to 3 projects, 1 .env file per project
               </p>
             </div>
 
-            {/* .env Files Metric */}
-            <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/20 border border-white/80 dark:border-white/10 shadow-2xs backdrop-blur-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center">
-                      <FileCode className="w-3.5 h-3.5" />
-                    </div>
-                    Vault Files
-                  </span>
-                  <span className="text-xs font-extrabold text-emerald-600">
-                    {isPro ? 'Unlimited' : '1 / project'}
-                  </span>
-                </div>
-                <div className="text-sm font-bold text-[var(--text-primary)] mb-1">
-                  {isPro ? 'Multi-Environment' : 'Single .env'}
-                </div>
-              </div>
-              <p className="text-[11px] text-[var(--text-secondary)] font-medium">
-                {isPro ? '.env, .env.local, .env.prod per project' : 'Upgrade to Pro for unlimited files'}
-              </p>
-            </div>
+            {/* Pro Annual (Featured) */}
+            <PricingCard
+              name="Pro Annual"
+              description="Best value with yearly billing and full Pro access"
+              price={proYearPrice}
+              period="/year"
+              features={proFeatures.slice(0, 4)}
+              badge="Recommended"
+              isFeatured
+              ctaLabel={isPro ? `Extend for ₹${proYearPrice}` : `Upgrade for ₹${proYearPrice}/year`}
+              ctaAction={() => handleCheckout('year')}
+              ctaLoading={loadingCycle === 'year'}
+              ctaDisabled={loadingCycle !== null}
+              secondaryLabel={`~₹${Math.round(proYearPrice / 12)}/month · ${proDiscountLabel}`}
+            />
 
-            {/* Security & Sync Metric */}
-            <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/20 border border-white/80 dark:border-white/10 shadow-2xs backdrop-blur-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                    </div>
-                    Encryption
-                  </span>
-                  <span className="text-xs font-extrabold text-blue-600">
-                    Zero-Knowledge
-                  </span>
-                </div>
-                <div className="text-sm font-bold text-[var(--text-primary)] mb-1">
-                  AES-256-GCM
-                </div>
-              </div>
-              <p className="text-[11px] text-[var(--text-secondary)] font-medium">
-                Vault keys never touch the database
-              </p>
-            </div>
+            {/* Pro Monthly */}
+            <PricingCard
+              name="Pro Monthly"
+              description="Flexible monthly subscription with same unlimited access"
+              price={proMonthPrice}
+              period="/month"
+              features={proFeatures.slice(0, 4)}
+              ctaLabel={isPro ? `Extend for ₹${proMonthPrice}` : `Upgrade for ₹${proMonthPrice}/month`}
+              ctaAction={() => handleCheckout('month')}
+              ctaLoading={loadingCycle === 'month'}
+              ctaDisabled={loadingCycle !== null}
+              secondaryLabel="Billed monthly · Cancel anytime"
+            />
+
           </div>
-        </div>
-      </section>
 
-      {/* Plan Extension / Subscription Options */}
-      <section>
-        <div className="px-4 sm:px-0 mb-4 text-[13px] font-bold text-[var(--text-secondary)] uppercase tracking-wide flex items-center gap-2">
-          <CreditCard className="h-4 w-4" />
-          {isPro ? 'Extend Pro Access' : 'Select Subscription Tier'}
-        </div>
-
-        <div className="glass rounded-[var(--radius-panel)] p-6 sm:p-8 shadow-[var(--shadow-soft)] border border-white/80 dark:border-white/10 space-y-6">
-          <div>
-            <h3 className="text-base font-bold text-[var(--text-primary)]">
-              {isPro ? 'Extend your Pro subscription' : 'Unlock unlimited power with TheCore Pro'}
-            </h3>
-            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Secure checkout provided by Cashfree Payments. Instant activation upon bank authorization.
+          <div className="text-center space-y-1">
+            <p className="text-sm text-[var(--text-secondary)]">
+              Secure checkout powered by Cashfree Payments
+            </p>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              UPI, cards, and NetBanking supported · 7-day money-back guarantee
             </p>
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {/* Monthly Option Card */}
-            <div
-              onClick={() => setSelectedCycle('month')}
-              className={`p-6 rounded-2xl border transition-premium cursor-pointer flex flex-col justify-between relative backdrop-blur-md ${
-                selectedCycle === 'month'
-                  ? 'bg-[#4C6FFF] text-white shadow-xl shadow-indigo-500/25 border-transparent ring-2 ring-indigo-400/30'
-                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 text-[var(--text-primary)] shadow-xs'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                      selectedCycle === 'month' ? 'bg-white text-[#4C6FFF] shadow-xs' : 'border border-slate-300/80 bg-white/80 text-slate-400'
-                    }`}>
-                      {selectedCycle === 'month' && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
-                    <span className="font-bold text-base">Monthly Plan</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-2xl font-black">₹99</span>
-                    <span className={`text-xs ml-1 ${selectedCycle === 'month' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>/ month</span>
-                  </div>
+        {/* Payment History */}
+        <section>
+          <h2 className="text-[22px] font-semibold text-[var(--text-primary)] mb-5">
+            Payment History
+          </h2>
+
+          <div className="bg-white rounded-[24px] border border-[var(--border-light)] overflow-hidden shadow-sm">
+            {usage.orders.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-
-                <p className={`text-xs mb-4 ${selectedCycle === 'month' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>
-                  Flexible month-to-month access. Extends subscription by 30 days.
+                <h4 className="text-base font-semibold text-[var(--text-primary)] mb-1">No transactions yet</h4>
+                <p className="text-sm text-[var(--text-secondary)] max-w-sm mx-auto">
+                  Your payment history and receipts will appear here after your first transaction
                 </p>
               </div>
-
-              <div className={`space-y-2 pt-4 border-t text-xs ${
-                selectedCycle === 'month' ? 'border-white/20 text-white' : 'border-slate-100 dark:border-white/10 text-[var(--text-primary)]'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'month' ? 'text-white' : 'text-slate-400'}`} />
-                  <span>Unlimited projects & .env vaults</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'month' ? 'text-white' : 'text-slate-400'}`} />
-                  <span>Full access for 30 days</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Annual Option Card (Featured) */}
-            <div
-              onClick={() => setSelectedCycle('year')}
-              className={`p-6 rounded-2xl border transition-premium cursor-pointer flex flex-col justify-between relative backdrop-blur-md ${
-                selectedCycle === 'year'
-                  ? 'bg-[#4C6FFF] text-white shadow-xl shadow-indigo-500/25 border-transparent ring-2 ring-indigo-400/30'
-                  : 'border-white/80 dark:border-white/10 bg-white/50 dark:bg-black/20 hover:border-indigo-200/80 hover:bg-white/80 text-[var(--text-primary)] shadow-xs'
-              }`}
-            >
-              {/* Savings Badge */}
-              <div className={`absolute -top-3 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs ${
-                selectedCycle === 'year' ? 'bg-white/25 text-white backdrop-blur-sm' : 'bg-emerald-600 text-white'
-              }`}>
-                Save 16% • Best Value
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                      selectedCycle === 'year' ? 'bg-white text-[#4C6FFF] shadow-xs' : 'border border-slate-300/80 bg-white/80 text-slate-400'
-                    }`}>
-                      {selectedCycle === 'year' && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
-                    <span className="font-bold text-base">Annual Plan</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-2xl font-black">₹999</span>
-                    <span className={`text-xs ml-1 ${selectedCycle === 'year' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>/ year</span>
-                  </div>
-                </div>
-
-                <p className={`text-xs mb-4 ${selectedCycle === 'year' ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>
-                  Billed annually. Extends subscription by 365 days (equivalent to ₹83/month).
-                </p>
-              </div>
-
-              <div className={`space-y-2 pt-4 border-t text-xs ${
-                selectedCycle === 'year' ? 'border-white/20 text-white' : 'border-slate-100 dark:border-white/10 text-[var(--text-primary)]'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'year' ? 'text-white' : 'text-slate-400'}`} />
-                  <span>Full year (365 days) uninterrupted Pro</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${selectedCycle === 'year' ? 'text-white' : 'text-slate-400'}`} />
-                  <span>Includes 7-day money-back guarantee</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Checkout Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-5 pt-6 border-t border-slate-100 dark:border-white/10">
-            <div className="space-y-1 text-center sm:text-left">
-              <div className="text-xs font-semibold text-[var(--text-primary)] flex items-center justify-center sm:justify-start gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>100% Secure Checkout via Cashfree PG</span>
-              </div>
-              <p className="text-[11px] text-[var(--text-secondary)]">
-                Supports UPI (Google Pay, PhonePe, Paytm), Debit/Credit Cards, and NetBanking.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleCheckout(selectedCycle)}
-              disabled={loading}
-              className="w-full sm:w-auto h-12 px-8 rounded-[var(--radius-btn)] bg-gradient-to-r from-[var(--color-primary)] via-indigo-600 to-[#818CF8] hover:scale-105 active:scale-95 text-white font-semibold text-sm shadow-[0_6px_20px_rgba(79,70,229,0.35)] transition-premium flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:scale-100 cursor-pointer shrink-0"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Connecting to Cashfree...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 fill-white" />
-                  <span>{isPro ? `Extend Pro for ₹${selectedCycle === 'year' ? '999' : '99'}` : `Upgrade to Pro for ₹${selectedCycle === 'year' ? '999' : '99'}`}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Payment & Order History Table */}
-      <section>
-        <div className="px-4 sm:px-0 mb-4 text-[13px] font-bold text-[var(--text-secondary)] uppercase tracking-wide flex items-center gap-2">
-          <FileCode className="h-4 w-4" />
-          Payment History & Invoices
-        </div>
-
-        <div className="glass rounded-[var(--radius-panel)] p-6 sm:p-8 shadow-[var(--shadow-soft)] border border-white/60 dark:border-white/10 overflow-hidden">
-          {usage.orders.length === 0 ? (
-            <div className="py-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto shadow-2xs">
-                <CreditCard className="w-6 h-6" />
-              </div>
-              <h4 className="text-sm font-bold text-[var(--text-primary)]">No orders or transactions yet</h4>
-              <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
-                When you purchase or renew a subscription via Cashfree, all receipts and invoice downloads will be recorded here.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[var(--border-light)] text-[var(--text-secondary)]">
-                    <th className="pb-3.5 font-bold uppercase tracking-wider text-[10px]">Date</th>
-                    <th className="pb-3.5 font-bold uppercase tracking-wider text-[10px]">Order ID</th>
-                    <th className="pb-3.5 font-bold uppercase tracking-wider text-[10px]">Period</th>
-                    <th className="pb-3.5 font-bold uppercase tracking-wider text-[10px]">Amount</th>
-                    <th className="pb-3.5 font-bold uppercase tracking-wider text-[10px]">Status</th>
-                    <th className="pb-3.5 font-bold uppercase tracking-wider text-[10px] text-right">Receipt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border-light)]">
-                  {usage.orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-white/60 dark:hover:bg-white/5 transition-colors">
-                      <td className="py-4 text-[var(--text-secondary)] font-medium">
-                        {new Date(order.created_at).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </td>
-                      <td className="py-4 font-mono text-[11px] text-[var(--text-primary)]">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700">
-                          {order.cf_order_id}
-                        </span>
-                      </td>
-                      <td className="py-4 font-semibold text-[var(--text-primary)] capitalize">
-                        {order.billing_cycle === 'year' ? '12 Months' : '1 Month'}
-                      </td>
-                      <td className="py-4 font-bold text-[var(--text-primary)] text-sm">
-                        ₹{(order.amount_paise / 100).toFixed(2)}
-                      </td>
-                      <td className="py-4">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            order.status === 'paid'
-                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25'
-                              : order.status === 'created'
-                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25'
-                              : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/25'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            order.status === 'paid' ? 'bg-emerald-500' : order.status === 'created' ? 'bg-amber-500' : 'bg-rose-500'
-                          }`} />
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-4 text-right">
-                        {order.status === 'paid' ? (
-                          <button
-                            type="button"
-                            onClick={() => handlePrintReceipt(order)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold text-[11px] transition-colors border border-blue-200/60 shadow-2xs cursor-pointer"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Invoice</span>
-                          </button>
-                        ) : (
-                          <span className="text-[var(--text-tertiary)] font-mono">—</span>
-                        )}
-                      </td>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--border-light)] bg-[#F4FAF7]">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Order ID
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Plan
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Receipt
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border-light)]">
+                    {usage.orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-[#F4FAF7]/30 transition-colors">
+                        <td className="px-6 py-4 text-sm text-[var(--text-primary)] whitespace-nowrap">
+                          {new Date(order.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-6 py-4 text-xs font-mono text-[var(--text-secondary)]">
+                          {order.cf_order_id}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-[var(--text-primary)]">
+                          {order.billing_cycle === 'year' ? '12 Months' : '1 Month'}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">
+                          ₹{(order.amount_paise / 100).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                              order.status === 'paid'
+                                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                : order.status === 'created'
+                                ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                                : 'bg-red-100 text-red-700 border border-red-200'
+                            }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              order.status === 'paid' ? 'bg-emerald-600' : order.status === 'created' ? 'bg-amber-600' : 'bg-red-600'
+                            }`} />
+                            {order.status === 'paid' ? 'Paid' : order.status === 'created' ? 'Pending' : 'Failed'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {order.status === 'paid' ? (
+                            <button
+                              type="button"
+                              onClick={() => handlePrintReceipt(order)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                            >
+                              <Download className="w-4 h-4" />
+                              Invoice
+                            </button>
+                          ) : (
+                            <span className="text-sm text-[var(--text-tertiary)]">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
 
+      {/* Payment Status Modal */}
       {paymentModalState && (
         <PaymentStatusModal
           isOpen={true}
@@ -630,7 +497,6 @@ export default function BillingClient({ usage }: BillingClientProps) {
           description={paymentModalError || undefined}
           onPrimaryClick={() => {
             setPaymentModalState(null);
-            handleCheckout(selectedCycle);
           }}
           onSecondaryClick={() => setPaymentModalState(null)}
           onClose={() => setPaymentModalState(null)}
@@ -639,4 +505,3 @@ export default function BillingClient({ usage }: BillingClientProps) {
     </div>
   );
 }
-

@@ -207,7 +207,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                   <tr key={u.id} className="hover:bg-[var(--bg-grouped)] transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-850 border border-[var(--separator)] shrink-0 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100 border border-[var(--separator)] shrink-0 flex items-center justify-center">
                           {u.avatar_url ? (
                             <img
                               src={u.avatar_url}
@@ -244,7 +244,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
                           u.plan === 'pro'
-                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                            ? 'bg-blue-500/10 text-blue-600'
                             : 'bg-[var(--bg-grouped)] text-[var(--text-content-secondary)]'
                         }`}
                       >
@@ -277,7 +277,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                       <button
                         type="button"
                         onClick={() => openUserDetail(u.id)}
-                        className="px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors cursor-pointer"
+                        className="px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 transition-colors cursor-pointer"
                       >
                         Inspect
                       </button>
@@ -315,7 +315,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
             ) : (
               <div className="space-y-6">
                 {actionMessage && (
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 shrink-0" />
                     <span>{actionMessage}</span>
                   </div>
@@ -323,7 +323,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
 
                 {/* User Profile Card */}
                 <div className="flex items-start sm:items-center gap-4 p-4 rounded-2xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-indigo-500/30 shrink-0 shadow-sm flex items-center justify-center">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden bg-slate-100 border-2 border-blue-500/30 shrink-0 shadow-sm flex items-center justify-center">
                     {userDetail.profile.avatar_url ? (
                       <img
                         src={userDetail.profile.avatar_url}
@@ -341,7 +341,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                       <h4 className="font-bold text-base sm:text-lg text-[var(--text-content)]">
                         {userDetail.profile.display_name || 'Anonymous User'}
                       </h4>
-                      <span className="font-mono uppercase text-[10px] px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                      <span className="font-mono uppercase text-[10px] px-2 py-0.5 rounded-full bg-slate-200/60 text-slate-600 font-semibold">
                         {userDetail.profile.role || 'user'}
                       </span>
                       {userDetail.profile.is_disabled ? (
@@ -359,13 +359,13 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs">
                       {userDetail.profile.profession && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 font-medium">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-700 font-medium">
                           <Briefcase className="w-3.5 h-3.5" />
                           <span>{userDetail.profile.profession}</span>
                         </div>
                       )}
                       {userDetail.profile.workplace && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-200/70 dark:bg-slate-800 text-[var(--text-content-secondary)] font-medium">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-200/70 text-[var(--text-content-secondary)] font-medium">
                           <Building className="w-3.5 h-3.5" />
                           <span>{userDetail.profile.workplace}</span>
                         </div>
@@ -399,14 +399,14 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                   </div>
                   <div className="p-3 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
                     <span className="text-[10px] text-[var(--text-content-secondary)]">Subscriptions Taken</span>
-                    <div className="font-bold text-sm mt-0.5 text-blue-600 dark:text-blue-400">
+                    <div className="font-bold text-sm mt-0.5 text-blue-600">
                       {userDetail.orders.length}
                     </div>
                   </div>
                 </div>
 
                 {/* Privacy Rule Banner */}
-                <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs flex items-start gap-2.5">
+                <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 text-xs flex items-start gap-2.5">
                   <Shield className="w-4 h-4 shrink-0 mt-0.5" />
                   <div>
                     <strong>Privacy Enforcement:</strong> Plaintext .env values and vault master passwords are client-encrypted with AES-256-GCM. Admins can never access or download decrypted file contents.
@@ -431,7 +431,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                       type="button"
                       disabled={actionLoading}
                       onClick={() => handleExtendPro('year')}
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
                     >
                       +1 Year Pro
                     </button>
@@ -487,7 +487,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                               <span className="font-mono font-bold text-[var(--text-content)]">
                                 {ord.cf_order_id}
                               </span>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 capitalize">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 capitalize">
                                 {ord.billing_cycle === 'year' ? '12 Months Pro' : '1 Month Pro'}
                               </span>
                             </div>
@@ -496,7 +496,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                               {ord.paid_at && (
                                 <>
                                   <span>•</span>
-                                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                  <span className="text-emerald-600 font-medium">
                                     Paid: {new Date(ord.paid_at).toLocaleString()}
                                   </span>
                                 </>
@@ -516,7 +516,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
                             <span
                               className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize flex items-center gap-1 ${
                                 ord.status === 'paid'
-                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  ? 'bg-emerald-500/15 text-emerald-600'
                                   : ord.status === 'created'
                                   ? 'bg-amber-500/15 text-amber-600'
                                   : 'bg-red-500/15 text-red-600'

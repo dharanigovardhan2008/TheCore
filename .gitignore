@@ -40,8 +40,22 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# AI tooling and agents
+.agent/
+.agents/
+.claude/
+.codex/
+.gemini/
+.impeccable/
+.qoder/
+
+# Scratch & temporary artifacts
+*.md
+!README.md
+!audit/AUDIT_REPORT.md
+capture-screenshot.js
+screenshots/
+security-review-pack/
+skills-lock.json
 prompt.txt
-REDESIGN-SUMMARY.md
-AGENTS.md
-CLAUDE.md
-*.tsbuildinfo
+

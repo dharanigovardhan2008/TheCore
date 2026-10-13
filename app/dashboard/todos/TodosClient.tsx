@@ -230,7 +230,7 @@ export default function TodosClient({ initialTodos, projects }: TodosClientProps
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white rounded-full font-semibold shadow-xs sm:shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium text-xs sm:text-sm shrink-0"
+            className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full font-semibold shadow-xs sm:shadow-[0_8px_16px_rgba(37,99,235,0.25)] transition-premium text-xs sm:text-sm shrink-0"
             aria-label="Add to-do"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -394,7 +394,7 @@ export default function TodosClient({ initialTodos, projects }: TodosClientProps
                             onKeyDown={(e) => handleInlineKeyDown(e, pId)}
                             onBlur={() => handleInlineAdd(pId)}
                             placeholder="Type and press Enter, Esc to cancel"
-                            className="w-full bg-page border border-surface-tint rounded-[var(--radius-btn)] px-3 py-1.5 text-sm text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700"
+                            className="w-full bg-[var(--bg-page)] border border-[var(--border-light)] rounded-[var(--radius-btn)] px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                         </div>
                       ) : (

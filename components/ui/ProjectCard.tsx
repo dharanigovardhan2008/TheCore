@@ -74,16 +74,20 @@ export default function ProjectCard({ project, services = [], todos = [], envFil
       </p>
 
       {/* Tech Stack Pills */}
-      <div className="flex flex-wrap items-center mb-6 -space-x-2">
-        {stack.slice(0, 5).map((tech, i) => (
-          <PlatformLogo key={i} tech={tech} zIndex={5 - i} />
-        ))}
-        {stack.length > 5 && (
-          <div className="w-8 h-8 rounded-full bg-[var(--bg-surface-tint)] shadow-sm border border-[var(--border-light)] flex items-center justify-center text-xs font-bold text-[var(--text-secondary)] relative z-0">
-            +{stack.length - 5}
+      {stack.length > 0 && (
+        <div className="inline-flex items-center mb-6 bg-white rounded-full px-3 py-2 shadow-sm border border-[var(--border-light)]">
+          <div className="flex items-center -space-x-2">
+            {stack.slice(0, 5).map((tech, i) => (
+              <PlatformLogo key={i} tech={tech} zIndex={5 - i} />
+            ))}
+            {stack.length > 5 && (
+              <div className="w-8 h-8 rounded-full bg-[var(--bg-surface-tint)] shadow-sm border border-white flex items-center justify-center text-xs font-bold text-[var(--text-secondary)] relative z-0">
+                +{stack.length - 5}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="pt-4 border-t border-[var(--border-light)] flex items-center justify-between mt-auto">
         <span className="text-xs font-medium text-[var(--text-tertiary)]" suppressHydrationWarning>

@@ -79,6 +79,50 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
 };
 
+export interface PlanConfigRecord {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  price_month_rupees: number;
+  price_year_rupees: number;
+  discount_percent: number;
+  discount_label?: string | null;
+  max_projects: number | null;
+  max_env_files: number | null;
+  features: string[];
+  is_active: boolean;
+  is_featured: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Format plan pricing into month/year cycle definitions
+ */
+export function formatPlanPricing(
+  monthRupees: number,
+  yearRupees: number,
+  discountPercent: number = 0,
+  discountLabel?: string | null
+) {
+  return {
+    month: {
+      amountInRupees: monthRupees,
+      amountInPaise: monthRupees * 100,
+      label: `₹${monthRupees} / month`,
+      periodLabel: 'per month',
+    },
+    year: {
+      amountInRupees: yearRupees,
+      amountInPaise: yearRupees * 100,
+      label: `₹${yearRupees} / year`,
+      periodLabel: discountLabel || (discountPercent > 0 ? `per year (Save ${discountPercent}%)` : 'per year'),
+    },
+  };
+}
+
 /**
  * Check if a user currently has an active Pro subscription.
  */
@@ -103,7 +147,10 @@ export function getEffectiveLimits(plan?: string | null, expiresAt?: string | nu
  * Get authoritative plan pricing amount in paise.
  * Guaranteed to come from server config, never client input.
  */
-export function getPlanPriceInPaise(planId: PlanId, cycle: BillingCycle): number {
+export function getPlanPriceInPaise(planId: string, cycle: BillingCycle, customPriceInPaise?: number): number {
+  if (customPriceInPaise && customPriceInPaise > 0) {
+    return customPriceInPaise;
+  }
   if (planId !== 'pro') {
     throw new Error('Only the Pro plan is billable.');
   }

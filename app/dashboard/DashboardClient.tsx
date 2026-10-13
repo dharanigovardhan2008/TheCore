@@ -163,7 +163,7 @@ export default function DashboardClient({ projects, services, todos = [], envFil
             </p>
             <button 
               onClick={() => setIsNewProjectOpen(true)}
-              className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 text-white rounded-full shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium active:scale-95"
+              className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 hover:bg-blue-700 hover:scale-105 text-white rounded-full shadow-[0_8px_16px_rgba(37,99,235,0.25)] transition-premium active:scale-95"
               aria-label="Create Project"
             >
               <Plus className="w-6 h-6 stroke-[2.5]" />

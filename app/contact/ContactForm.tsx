@@ -13,7 +13,7 @@ export default function ContactForm() {
   if (submitted) {
     return (
       <div className="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-        <h3 className="text-base font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+        <h3 className="text-base font-semibold text-emerald-600 mb-1">
           Thank you for reaching out!
         </h3>
         <p className="text-xs text-[var(--text-content-secondary)]">

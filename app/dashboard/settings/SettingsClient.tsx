@@ -75,9 +75,9 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Email Address</label>
-                <input 
-                  type="email" 
-                  value={user.email} 
+                <input
+                  type="email"
+                  value={user.email}
                   disabled
                   className="w-full h-12 px-4 bg-[var(--bg-page)]/50 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-tertiary)] cursor-not-allowed shadow-sm"
                 />
@@ -90,7 +90,7 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
                   type="text" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full h-12 px-4 glass hover:bg-white/40 dark:hover:bg-black/40 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-premium shadow-sm"
+                  className="w-full h-12 px-4 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium shadow-sm"
                   placeholder="Your name"
                 />
               </div>
@@ -99,7 +99,7 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
                 <button 
                   type="submit" 
                   disabled={isSaving || !name.trim() || name === user.name}
-                  className="h-11 px-6 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white text-sm font-semibold rounded-[var(--radius-btn)] shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-premium disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+                  className="h-11 px-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold rounded-[var(--radius-btn)] shadow-sm transition-premium disabled:opacity-50 flex items-center gap-2"
                 >
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
                 </button>
@@ -183,10 +183,10 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
           <div className="glass rounded-[var(--radius-panel)] overflow-hidden shadow-sm border border-red-500/20 p-6 sm:p-8 bg-red-500/5">
             <div className="flex flex-col sm:flex-row gap-6 sm:items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">Delete Account</h3>
-                <p className="text-sm text-red-600/70 dark:text-red-400/70">
+                <h3 className="text-lg font-bold text-red-600 mb-1">Delete Account</h3>
+                <p className="text-sm text-red-600/70">
                   Permanently delete your account and all associated data. This cannot be recovered. 
-                  See our <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-600 dark:hover:text-red-300">Privacy Policy</Link> regarding data retention.
+                  See our <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-600">Privacy Policy</Link> regarding data retention.
                 </p>
               </div>
               <button 

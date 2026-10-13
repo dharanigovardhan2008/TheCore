@@ -60,7 +60,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-base tracking-tight">TheCore</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 border border-amber-500/20">
                   ADMIN
                 </span>
               </div>
@@ -103,7 +103,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <form action={signOut}>
             <button
               type="submit"
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" /> Log out
             </button>

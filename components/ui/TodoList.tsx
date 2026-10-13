@@ -82,7 +82,7 @@ export default function TodoList({ projectId, initialTodos }: TodoListProps) {
               >
                 <div className={`w-[22px] h-[22px] rounded-lg border-2 flex items-center justify-center transition-all duration-300
                   ${todo.done 
-                    ? 'bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] border-[var(--color-primary)] text-white shadow-[0_2px_8px_rgba(79,70,229,0.3)]' 
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-[0_2px_8px_rgba(37,99,235,0.25)]' 
                     : 'bg-[var(--bg-page)] border-[var(--border-light)] text-transparent group-hover:border-[var(--color-primary)]'}`}>
                   <Check className={`w-3.5 h-3.5 stroke-[3] transition-all duration-300 ${todo.done ? 'scale-100' : 'scale-0'}`} />
                 </div>
@@ -125,20 +125,20 @@ export default function TodoList({ projectId, initialTodos }: TodoListProps) {
           value={newText}
           onChange={(e) => setNewText(e.target.value)}
           placeholder="Add a to-do..."
-          className="w-full min-w-0 text-[15px] text-[var(--text-primary)] bg-[var(--bg-page)] border border-[var(--border-light)] rounded-[var(--radius-input)] px-4 h-12 focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 shadow-sm transition-premium"
+          className="w-full min-w-0 text-[15px] text-[var(--text-primary)] bg-white border border-[#DCE9E3] rounded-[var(--radius-input)] px-4 h-12 focus:outline-none focus:border-blue-500 shadow-sm transition-premium"
         />
         <div className="flex gap-3 w-full">
           <input 
             type="date"
             value={newDueDate}
             onChange={(e) => setNewDueDate(e.target.value)}
-            className="flex-[1.5] min-w-0 text-[14px] font-medium text-[var(--text-secondary)] bg-[var(--bg-page)] border border-[var(--border-light)] rounded-[var(--radius-input)] px-3 h-12 focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 shadow-sm transition-premium"
+            className="flex-[1.5] min-w-0 text-[14px] font-medium text-[var(--text-secondary)] bg-white border border-[#DCE9E3] rounded-[var(--radius-input)] px-3 h-12 focus:outline-none focus:border-blue-500 shadow-sm transition-premium"
           />
           <div className="flex-1 min-w-0 relative">
             <select
               value={newPriority}
               onChange={(e) => setNewPriority(e.target.value as any)}
-              className="w-full h-12 text-[14px] font-medium text-[var(--text-secondary)] bg-[var(--bg-page)] border border-[var(--border-light)] rounded-[var(--radius-input)] px-3 focus:outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 shadow-sm transition-premium appearance-none"
+              className="w-full h-12 text-[14px] font-medium text-[var(--text-secondary)] bg-white border border-[#DCE9E3] rounded-[var(--radius-input)] px-3 focus:outline-none focus:border-blue-500 shadow-sm transition-premium appearance-none"
             >
               <option value="low">Low</option>
               <option value="med">Med</option>
@@ -148,7 +148,7 @@ export default function TodoList({ projectId, initialTodos }: TodoListProps) {
           <button 
             type="submit" 
             disabled={isAdding || !newText.trim()}
-            className="bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 active:scale-95 text-white rounded-[var(--radius-input)] disabled:opacity-50 flex items-center justify-center w-12 h-12 shrink-0 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-premium"
+            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-[var(--radius-input)] disabled:opacity-50 flex items-center justify-center w-12 h-12 shrink-0 shadow-sm transition-premium"
           >
             <Plus className="w-5 h-5 stroke-[2.5]" />
           </button>

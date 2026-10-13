@@ -35,7 +35,7 @@ import {
   safeFetchCashfreeOrder
 } from '@/lib/cashfree'
 
-const accents = ['pink', 'blue', 'indigo', 'orange'] as const;
+const accents = ['pink', 'blue', 'orange'] as const;
 
 /**
  * Server-side guard to verify project limits based on user plan
@@ -670,9 +670,10 @@ export async function getUserPlanAndUsage() {
   const isPro = isProActive(profile?.plan, profile?.plan_expires_at)
   const limits = getEffectiveLimits(profile?.plan, profile?.plan_expires_at)
 
-  const [{ count: projectCount }, { data: orders }] = await Promise.all([
+  const [{ count: projectCount }, { data: orders }, { data: planConfigs }] = await Promise.all([
     supabase.from('projects').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
     supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('plan_configs').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
   ])
 
   return {
@@ -683,6 +684,7 @@ export async function getUserPlanAndUsage() {
     projectCount: projectCount || 0,
     limits,
     orders: (orders || []) as Order[],
+    planConfigs: (planConfigs || []) as any[],
   }
 }
 
@@ -697,7 +699,22 @@ export async function createCheckoutSession(cycle: BillingCycle) {
     throw new Error('You must be signed in to upgrade.')
   }
 
-  const amountPaise = getPlanPriceInPaise('pro', cycle)
+  let amountPaise = getPlanPriceInPaise('pro', cycle)
+  try {
+    const { data: dbPlan } = await supabase
+      .from('plan_configs')
+      .select('price_month_rupees, price_year_rupees')
+      .eq('id', 'pro')
+      .maybeSingle()
+    if (dbPlan) {
+      const priceRupees = cycle === 'year' ? dbPlan.price_year_rupees : dbPlan.price_month_rupees
+      if (priceRupees && priceRupees > 0) {
+        amountPaise = priceRupees * 100
+      }
+    }
+  } catch {
+    // fallback to static config
+  }
   const amountRupees = amountPaise / 100
 
   // Dynamically resolve siteUrl to match active deployed domain

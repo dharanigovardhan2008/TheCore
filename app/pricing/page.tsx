@@ -21,12 +21,19 @@ export default async function PricingPage() {
     }
   }
 
+  const { data: planConfigs } = await supabase
+    .from('plan_configs')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+
   return (
     <PricingClient
       isLoggedIn={Boolean(user)}
       currentPlan={userPlan?.plan || 'free'}
       isPro={Boolean(userPlan?.isPro)}
       planExpiresAt={userPlan?.plan_expires_at || null}
+      planConfigs={(planConfigs || []) as any[]}
     />
   );
 }

@@ -131,11 +131,11 @@ export function EnvFileModal({ isOpen, onClose, onSave, projects, initialProject
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
-            <div className="p-4 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-sm border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 bg-amber-500/10 text-amber-700 rounded-xl text-sm border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{error.replace('PLAN_LIMIT_REACHED: ', '')}</p>
                 {error.includes('PLAN_LIMIT_REACHED') && (
-                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                  <p className="text-xs text-amber-600/80 mt-0.5">
                     Upgrade to TheCore Pro for unlimited .env files and projects.
                   </p>
                 )}
@@ -177,7 +177,7 @@ export function EnvFileModal({ isOpen, onClose, onSave, projects, initialProject
                     onClick={() => setFileNameMode(mode)}
                     className={`px-4 py-2 rounded-[var(--radius-btn)] text-sm font-semibold transition-colors ${
                       fileNameMode === mode
-                        ? 'bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] text-white'
+                        ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-[var(--bg-page)] text-[var(--text-secondary)] hover:bg-gray-100'
                     }`}
                   >

@@ -141,7 +141,7 @@ export default function ProjectDetailClient({ project }: Props) {
         <div className="flex items-center gap-3 pt-2">
           <button 
             onClick={() => setIsEditDialogOpen(true)}
-            className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 rounded-full shadow-[0_8px_16px_rgba(79,70,229,0.3)] transition-premium active:scale-95"
+            className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 hover:scale-105 rounded-full shadow-[0_8px_16px_rgba(37,99,235,0.25)] transition-premium active:scale-95"
           >
             Edit Project
           </button>
@@ -246,7 +246,7 @@ export default function ProjectDetailClient({ project }: Props) {
                 <button 
                   onClick={handleSaveNotes}
                   disabled={isSavingNotes}
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 text-white text-sm font-bold rounded-full shadow-[0_4px_12px_rgba(79,70,229,0.3)] disabled:opacity-50 transition-premium active:scale-95"
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 hover:scale-105 text-white text-sm font-bold rounded-full shadow-[0_4px_12px_rgba(37,99,235,0.25)] disabled:opacity-50 transition-premium active:scale-95"
                 >
                   <Save className="w-4 h-4" /> Save
                 </button>
@@ -258,7 +258,7 @@ export default function ProjectDetailClient({ project }: Props) {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full min-h-[200px] p-4 text-[15px] bg-[var(--bg-page)] border border-[var(--border-light)] rounded-[var(--radius-input)] outline-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 text-[var(--text-primary)] resize-y shadow-sm transition-premium"
+              className="w-full min-h-[200px] p-4 text-[15px] bg-[var(--bg-page)] border border-[var(--border-light)] rounded-[var(--radius-input)] outline-none focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-[var(--text-primary)] resize-y shadow-sm transition-premium"
               placeholder="Write project notes here..."
             />
           ) : (
@@ -343,7 +343,7 @@ export default function ProjectDetailClient({ project }: Props) {
             <button 
               type="submit" 
               disabled={isAddingService || !newPlatform.trim() || !newEmail.trim()}
-              className="h-11 w-full bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:opacity-90 active:scale-98 text-white px-5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-2"
+              className="h-11 w-full bg-blue-600 hover:bg-blue-700 active:scale-98 text-white px-5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-2"
             >
               Add Platform
             </button>

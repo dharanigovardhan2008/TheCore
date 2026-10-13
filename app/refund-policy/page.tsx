@@ -19,14 +19,14 @@ export default function RefundPolicyPage() {
         </Link>
 
         {/* Legal Review Banner */}
-        <div className="mb-8 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 flex items-start gap-3">
+        <div className="mb-8 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 flex items-start gap-3">
           <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
           <p className="text-sm">
             <strong>Template generated for review.</strong> Have a qualified legal professional review this policy for your jurisdiction before launch.
           </p>
         </div>
 
-        <article className="prose prose-neutral dark:prose-invert max-w-none bg-[var(--bg-surface)] p-8 sm:p-12 rounded-2xl border border-[var(--separator)] shadow-sm">
+        <article className="prose prose-neutral max-w-none bg-[var(--bg-surface)] p-8 sm:p-12 rounded-2xl border border-[var(--separator)] shadow-sm">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Refund & Cancellation Policy</h1>
           <p className="text-sm text-[var(--text-content-secondary)] mb-8">
             Effective Date: October 20, 2026 | Version 1.0

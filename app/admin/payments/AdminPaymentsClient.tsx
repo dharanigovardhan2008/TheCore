@@ -103,7 +103,7 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border border-[var(--separator)] shrink-0 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-[var(--separator)] shrink-0 flex items-center justify-center">
                           {o.profiles?.avatar_url ? (
                             <img
                               src={o.profiles.avatar_url}
@@ -136,7 +136,7 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
                           o.status === 'paid'
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            ? 'bg-emerald-500/10 text-emerald-600'
                             : o.status === 'created'
                             ? 'bg-amber-500/10 text-amber-600'
                             : 'bg-red-500/10 text-red-600'

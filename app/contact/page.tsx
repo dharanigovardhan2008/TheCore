@@ -47,7 +47,7 @@ export default function ContactPage() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 shrink-0">
+                <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 shrink-0">
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>

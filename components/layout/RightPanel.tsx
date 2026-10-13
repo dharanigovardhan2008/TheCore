@@ -35,7 +35,7 @@ export default function RightPanel({
     const paused = (projects || []).filter(p => p.status === 'paused').length;
 
     return [
-      { label: 'deployed', value: deployed, color: 'var(--color-indigo)' },
+      { label: 'deployed', value: deployed, color: '#2563EB' },
       { label: 'in_progress', value: inProgress, color: 'var(--color-orange)' },
       { label: 'idea', value: idea, color: '#CBD5E1' },
       { label: 'paused', value: paused, color: '#94A3B8' }
@@ -126,7 +126,7 @@ export default function RightPanel({
               return (
                 <div key={s.label} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color === 'var(--color-indigo)' ? '#5B3FD1' : s.color === 'var(--color-orange)' ? '#FF7A2F' : s.color }} />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color === 'var(--color-indigo)' || s.color === '#2563EB' ? '#2563EB' : s.color === 'var(--color-orange)' ? '#FF7A2F' : s.color }} />
                     <span className="text-content-secondary capitalize">{s.label.replace('_', ' ')}</span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -176,7 +176,7 @@ export default function RightPanel({
                   <div key={todo.id} className="flex items-start gap-3">
                     <input 
                       type="checkbox" 
-                      className="mt-0.5 rounded-[4px] border-surface-tint text-accent-primary focus:ring-gray-300 dark:focus:ring-gray-700 bg-transparent shrink-0" 
+                      className="mt-0.5 rounded-[4px] border-surface-tint text-blue-600 focus:ring-blue-500/20 bg-transparent shrink-0" 
                       onChange={() => handleToggleTodo(todo.id)}
                     />
                     <div className="flex-1 min-w-0">

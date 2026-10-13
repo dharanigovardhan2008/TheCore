@@ -66,7 +66,7 @@ export function EnvVault({ projectId }: { projectId: string }) {
           <p className="text-[var(--text-secondary)] font-medium mb-6">No secure environment files found for this project.</p>
           <Link
             href="/dashboard/env"
-            className="bg-gradient-to-tr from-[var(--color-primary)] to-[#818CF8] hover:scale-105 text-white px-6 py-2.5 rounded-full font-bold shadow-[0_4px_12px_rgba(79,70,229,0.3)] hover:shadow-[0_8px_16px_rgba(79,70,229,0.4)] transition-premium active:scale-95"
+            className="bg-blue-600 hover:bg-blue-700 hover:scale-105 text-white px-6 py-2.5 rounded-full font-bold shadow-[0_4px_12px_rgba(37,99,235,0.25)] hover:shadow-[0_8px_16px_rgba(37,99,235,0.35)] transition-premium active:scale-95"
           >
             Add .env File
           </Link>

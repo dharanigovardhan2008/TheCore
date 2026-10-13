@@ -7,6 +7,7 @@ import { Suspense, useEffect } from "react";
 import Brand from "@/components/ui/Brand";
 import LoadingOrb from "@/components/ui/LoadingOrb";
 import AvatarPicker, { DEFAULT_AVATARS } from "@/components/ui/AvatarPicker";
+import EmailVerification from "@/components/ui/EmailVerification";
 import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 const DEFAULT_PROFESSIONS = [
@@ -22,7 +23,7 @@ const DEFAULT_PROFESSIONS = [
 function LoginContent() {
   const searchParams = useSearchParams();
   const initialMode = searchParams.get("mode") === "complete_google_signup" ? "complete_google_signup" : "login";
-  const [mode, setMode] = useState<"login" | "signup" | "complete_google_signup">(initialMode);
+  const [mode, setMode] = useState<"login" | "signup" | "verify_email" | "complete_google_signup">(initialMode);
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(DEFAULT_AVATARS[0]);
   const [profession, setProfession] = useState<string>("Software Developer");
@@ -32,6 +33,7 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -53,11 +55,61 @@ function LoginContent() {
     }
   }, [mode, supabase]);
 
+  const handleSendVerificationCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError("You must agree to the Terms and Privacy Policy");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Send OTP to email
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        },
+      });
+
+      if (otpError) throw otpError;
+
+      setMode("verify_email");
+    } catch (err: any) {
+      setError(err.message || "Failed to send verification code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailVerified = () => {
+    setEmailVerified(true);
+    setMode("signup");
+  };
+
+  const handleBackToEmail = () => {
+    setMode("signup");
+    setEmailVerified(false);
+  };
+
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    
+
     if ((mode === "signup" || mode === "complete_google_signup") && password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -67,6 +119,12 @@ function LoginContent() {
       setError("You must agree to the Terms and Privacy Policy");
       return;
     }
+
+    if (mode === "signup" && !emailVerified) {
+      setError("Please verify your email first");
+      return;
+    }
+
 // Dev Mode Bypass
     if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("mock-project")) {
       alert(`[Dev Mode] Simulating ${mode} success since you are using mock keys. Going to dashboard!`);
@@ -77,16 +135,16 @@ function LoginContent() {
     setLoading(true);
     setError(null);
     try {
-      
+
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         router.push("/dashboard");
       } else if (mode === "complete_google_signup") {
         const finalProfession = profession === "Other" ? (customProfession.trim() || "Other") : (profession || "Software Developer");
-        const { data: updateData, error } = await supabase.auth.updateUser({ 
+        const { data: updateData, error } = await supabase.auth.updateUser({
           password,
-          data: { 
+          data: {
             full_name: name,
             avatar_url: avatarUrl,
             profession: finalProfession,
@@ -108,10 +166,11 @@ function LoginContent() {
         router.push("/dashboard");
       } else {
         const finalProfession = profession === "Other" ? (customProfession.trim() || "Other") : (profession || "Software Developer");
-        const { data: signUpData, error } = await supabase.auth.signUp({ 
-          email, 
+        const { data: signUpData, error } = await supabase.auth.signUp({
+          email,
           password,
           options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: {
               full_name: name,
               avatar_url: avatarUrl,
@@ -134,10 +193,7 @@ function LoginContent() {
           }, { onConflict: 'id' });
         }
 
-        alert("Account created! (If email confirmation is enabled, please check your email).");
-        if (!error) {
-           router.push("/dashboard");
-        }
+        router.push("/dashboard");
       }
     } catch (err: any) {
       setError(err.message);
@@ -146,7 +202,7 @@ function LoginContent() {
     }
   };
 
-  
+
   const handleGoogleAuth = async () => {
     if ((mode === "signup" || mode === "complete_google_signup") && !agreedToTerms) {
       setError("You must agree to the Terms and Privacy Policy");
@@ -176,6 +232,21 @@ function LoginContent() {
     }
   };
 
+  // Email verification view
+  if (mode === "verify_email") {
+    return (
+      <div className="min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 md:p-8 gradient-bg">
+        <div className="w-full max-w-md bg-surface p-6 sm:p-8 rounded-[var(--radius-shell)] shadow-[var(--shadow-shell-soft)]">
+          <EmailVerification
+            email={email}
+            onVerified={handleEmailVerified}
+            onBack={handleBackToEmail}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 md:p-8 gradient-bg">
       <div className={`w-full ${mode === "signup" || mode === "complete_google_signup" ? "max-w-xl" : "max-w-md"} bg-surface p-6 sm:p-8 rounded-[var(--radius-shell)] shadow-[var(--shadow-shell-soft)] transition-all my-auto`}>
@@ -194,21 +265,21 @@ function LoginContent() {
             <button
               type="button"
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "login" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
-              onClick={() => { setMode("login"); setError(null); }}
+              onClick={() => { setMode("login"); setError(null); setEmailVerified(false); }}
             >
               Sign In
             </button>
             <button
               type="button"
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "signup" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
-              onClick={() => { setMode("signup"); setError(null); }}
+              onClick={() => { setMode("signup"); setError(null); setEmailVerified(false); }}
             >
               Sign Up
             </button>
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={handleAuth}>
+        <form className="space-y-4" onSubmit={mode === "signup" && !emailVerified ? handleSendVerificationCode : handleAuth}>
           {(mode === "signup" || mode === "complete_google_signup") && (
             <>
               {/* Profile Photo / 3D Pixar Avatar Picker */}
@@ -217,6 +288,7 @@ function LoginContent() {
                   value={avatarUrl}
                   onChange={setAvatarUrl}
                   nameFallback={name || "User"}
+                  variant="compact"
                 />
               </div>
 
@@ -227,7 +299,7 @@ function LoginContent() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
+                  className="w-full px-4 py-3 bg-surface-tint border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   placeholder="e.g. Alex Rivera"
                 />
               </div>
@@ -246,7 +318,7 @@ function LoginContent() {
                       className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                         profession === prof
                           ? "bg-accent-primary text-white shadow-xs"
-                          : "bg-surface-tint hover:bg-surface text-content border border-transparent hover:border-slate-300 dark:hover:border-slate-700"
+                          : "bg-surface-tint hover:bg-surface text-content border border-[#DCE9E3] hover:border-slate-300"
                       }`}
                     >
                       {prof}
@@ -259,7 +331,7 @@ function LoginContent() {
                     required
                     value={customProfession}
                     onChange={(e) => setCustomProfession(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700 text-sm mt-1"
+                    className="w-full px-4 py-2.5 bg-surface-tint border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm mt-1"
                     placeholder="Enter your profession..."
                   />
                 )}
@@ -274,7 +346,7 @@ function LoginContent() {
                   type="text"
                   value={workplace}
                   onChange={(e) => setWorkplace(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
+                  className="w-full px-4 py-3 bg-surface-tint border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   placeholder="e.g. Google, MIT, Freelancer, Stealth Startup..."
                 />
               </div>
@@ -287,34 +359,38 @@ function LoginContent() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={mode === "complete_google_signup"}
-              className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
+              disabled={mode === "complete_google_signup" || (mode === "signup" && emailVerified)}
+              className="w-full px-4 py-3 bg-surface-tint border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-60"
               placeholder=""
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-content mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
-              placeholder=""
-            />
-          </div>
-          {(mode === "signup" || mode === "complete_google_signup") && (
-            <div>
-              <label className="block text-sm font-medium text-content mb-1">Confirm Password</label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-surface-tint border-none rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700"
-                placeholder=""
-              />
-            </div>
+          {(mode !== "signup" || emailVerified) && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-content mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-surface-tint border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  placeholder=""
+                />
+              </div>
+              {(mode === "signup" || mode === "complete_google_signup") && (
+                <div>
+                  <label className="block text-sm font-medium text-content mb-1">Confirm Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-surface-tint border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content placeholder:text-content-hint outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    placeholder=""
+                  />
+                </div>
+              )}
+            </>
           )}
           {(mode === "signup" || mode === "complete_google_signup") && (
             <div className="flex items-start gap-2">
@@ -332,15 +408,15 @@ function LoginContent() {
             </div>
           )}
 
-          {error && <div className="text-red-500 text-sm p-3 bg-red-50 dark:bg-red-950/20 rounded-[var(--radius-btn)]">{error}</div>}
+          {error && <div className="text-red-500 text-sm p-3 bg-red-50 rounded-[var(--radius-btn)] border border-red-200">{error}</div>}
 
           <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-accent-primary text-white rounded-[var(--radius-btn)] font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+              className="w-full py-3 bg-accent-primary text-white rounded-[var(--radius-btn)] font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
-              {loading ? "Please wait..." : mode === "login" ? "Sign In" : mode === "complete_google_signup" ? "Complete Account" : "Create Account"}
+              {loading ? "Please wait..." : mode === "login" ? "Sign In" : mode === "complete_google_signup" ? "Complete Account" : emailVerified ? "Create Account" : "Send Verification Code"}
             </button>
           </div>
         </form>
@@ -352,12 +428,12 @@ function LoginContent() {
               <span className="text-content-hint text-xs font-medium uppercase tracking-wider">or</span>
               <div className="h-px bg-surface-tint flex-1" />
             </div>
-            
+
             <button
               type="button"
               onClick={handleGoogleAuth}
               disabled={loading}
-              className="mt-6 w-full flex items-center justify-center gap-3 py-3 bg-surface border border-surface-tint text-content rounded-[var(--radius-btn)] font-medium hover:bg-surface-tint transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 dark:focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+              className="mt-6 w-full flex items-center justify-center gap-3 py-3 bg-surface border border-surface-tint text-content rounded-[var(--radius-btn)] font-medium hover:bg-surface-tint transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

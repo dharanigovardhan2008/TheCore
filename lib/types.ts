@@ -120,8 +120,8 @@ export interface DashboardProject extends Project {
 /** Accent color options for projects */
 export const PROJECT_ACCENTS = [
   { label: "Pink", value: "pink", class: "bg-project-pink", hex: "#FFC3E3" },
-  { label: "Blue", value: "blue", class: "bg-project-blue", hex: "#CDEEFB" },
-  { label: "Indigo", value: "indigo", class: "bg-accent-primary", hex: "#5B3FD1" },
+  { label: "Light Blue", value: "blue", class: "bg-project-blue", hex: "#CDEEFB" },
+  { label: "Blue", value: "indigo", class: "bg-accent-primary", hex: "#2563EB" },
   { label: "Orange", value: "orange", class: "bg-accent-secondary", hex: "#FF7A2F" },
 ] as const;
 

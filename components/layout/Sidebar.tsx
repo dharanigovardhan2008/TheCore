@@ -3,17 +3,18 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Brand from "@/components/ui/Brand";
-import { 
-  LayoutDashboard, 
-  FolderOpen, 
-  CheckSquare, 
-  KeyRound, 
-  Users, 
+import {
+  LayoutDashboard,
+  FolderOpen,
+  CheckSquare,
+  KeyRound,
+  Users,
   Settings,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import clsx from "clsx";
+
+import Brand from "@/components/ui/Brand";
 import { signOut } from "@/app/dashboard/settings/actions";
 
 export interface UserProfileInfo {
@@ -36,71 +37,109 @@ const navItems = [
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-export default function Sidebar({ user }: { user?: UserProfileInfo }) {
+export default function Sidebar({
+  user,
+}: {
+  user?: UserProfileInfo;
+}) {
   const pathname = usePathname();
   const isPro = Boolean(user?.isPro);
 
   return (
-    <aside className="hidden lg:flex flex-col w-[260px] h-[calc(100vh-32px)] m-4 rounded-[var(--radius-panel)] glass shadow-[var(--shadow-soft)] overflow-hidden">
+    <aside
+      aria-label="Main navigation"
+      className={clsx(
+        "hidden lg:flex flex-col shrink-0",
+        "w-[260px] h-[calc(100dvh-32px)]",
+        "ml-4 my-4 sticky top-4 self-start",
+        "rounded-[var(--radius-panel)]",
+        "glass border border-[var(--border-light)]",
+        "shadow-[var(--shadow-soft)]",
+        "transition-premium"
+      )}
+    >
       {/* Brand Header */}
-      <div className="flex items-center px-6 py-6 pb-4">
+      <div className="flex items-center px-6 pt-7 pb-5 shrink-0">
         <Brand size="lg" href="/dashboard" />
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
+      {/* Navigation List */}
+      <nav
+        aria-label="Workspace navigation"
+        className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-1.5"
+      >
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isActive =
+            item.href === "/dashboard"
+              ? pathname === item.href
+              : pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+          const Icon = item.icon;
+
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={clsx(
-                "flex items-center gap-3 px-4 py-2.5 rounded-full transition-premium font-medium text-sm",
-                isActive 
-                  ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold" 
-                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-tint)] hover:text-[var(--text-primary)]"
+                "flex items-center gap-3.5 px-5 py-3 rounded-full transition-premium text-[15px]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                isActive
+                  ? "bg-white text-blue-600 font-semibold shadow-sm border border-[var(--border-light)]"
+                  : "text-[var(--text-secondary)] font-medium hover:bg-white/50 hover:text-[var(--text-primary)]"
               )}
             >
-              <item.icon className="w-5 h-5" />
-              {item.label}
+              <Icon
+                className={clsx(
+                  "w-5 h-5 shrink-0 transition-colors",
+                  isActive
+                    ? "text-blue-600"
+                    : "text-[var(--text-tertiary)]"
+                )}
+                strokeWidth={2}
+              />
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom Section: Plan Type & User & Logout */}
-      <div className="p-3 mt-auto border-t border-[var(--border-light)] space-y-2.5 bg-white/40 dark:bg-black/20">
-        {/* Plan Type in Sidebar */}
-        <div className="p-3 rounded-2xl bg-[var(--bg-surface-tint)] border border-[var(--border-light)] shadow-xs">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Plan Type</span>
+      {/* Bottom Container */}
+      <div className="p-3.5 mt-auto space-y-3 shrink-0">
+        {/* Plan Type Card */}
+        <div className="p-4 rounded-[var(--radius-card)] bg-white border border-[var(--border-light)] shadow-sm hover:shadow-md transition-premium">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+              PLAN TYPE
+            </span>
             <span
               className={clsx(
-                "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
+                "px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border transition-colors",
                 isPro
-                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
-                  : "bg-slate-200/80 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/40"
+                  ? "bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]"
+                  : "bg-slate-50 text-slate-600 border-slate-200"
               )}
             >
               {isPro ? "PRO" : "FREE"}
             </span>
           </div>
-          <div className="flex items-center justify-between text-xs pt-0.5">
-            <span className="text-[11px] text-[var(--text-tertiary)] font-medium truncate max-w-[120px]">
+
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-[var(--text-primary)] font-semibold truncate max-w-[130px]">
               {isPro ? "Unlimited Projects" : "3 Projects Limit"}
             </span>
             {isPro ? (
               <Link
                 href="/dashboard/settings/billing"
-                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline shrink-0"
+                className="text-[12px] font-bold text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-1 py-0.5 transition-colors"
               >
                 Billing
               </Link>
             ) : (
               <Link
                 href="/pricing"
-                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline shrink-0"
+                className="text-[12px] font-bold text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-1 py-0.5 transition-colors"
               >
                 Upgrade
               </Link>
@@ -108,32 +147,41 @@ export default function Sidebar({ user }: { user?: UserProfileInfo }) {
           </div>
         </div>
 
-        {/* User Card */}
-        <div className="flex items-center gap-2.5 px-1 py-1">
-          {user?.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={user.name || "User avatar"}
-              className="w-8 h-8 rounded-full object-cover shrink-0 shadow-xs border border-white/80 dark:border-white/20"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white font-bold text-xs uppercase shrink-0 shadow-xs">
-              {user?.name?.charAt(0) || 'U'}
-            </div>
-          )}
-          <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-semibold truncate text-[var(--text-primary)]">{user?.name || 'User'}</span>
-            </div>
-            <span className="text-xs text-[var(--text-tertiary)] truncate">{user?.email || 'user@example.com'}</span>
+        {/* User Profile Card */}
+        <Link
+          href="/dashboard/settings/profile"
+          title="Edit personal details, avatar & profile"
+          className="flex items-center gap-3 px-2 py-1 -mx-0.5 rounded-2xl hover:bg-white/60 transition-premium cursor-pointer group"
+        >
+          <div className="relative shrink-0">
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.name || "User avatar"}
+                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm bg-slate-100"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-sm uppercase shadow-sm border-2 border-white">
+                {user?.name?.charAt(0) || "U"}
+              </div>
+            )}
           </div>
-        </div>
+
+          <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+            <span className="text-sm font-bold truncate text-[var(--text-primary)] group-hover:text-blue-600 transition-colors">
+              {user?.name || "User"}
+            </span>
+            <span className="text-xs text-[var(--text-secondary)] truncate">
+              {user?.email || "user@example.com"}
+            </span>
+          </div>
+        </Link>
 
         {/* Logout Button */}
         <form action={signOut} className="w-full pt-0.5">
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors border border-slate-200/70 hover:border-rose-200 shadow-2xs"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-2xl text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-[var(--border-light)] bg-transparent hover:border-rose-200 transition-premium shadow-sm cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5 text-rose-500" />
             <span>Log out</span>

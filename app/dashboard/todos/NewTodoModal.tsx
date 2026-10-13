@@ -80,8 +80,8 @@ export default function NewTodoModal({ isOpen, onClose, projects, onSave, defaul
               value={text}
               onChange={(e) => setText(e.target.value)}
               className={clsx(
-                "w-full px-4 py-2 bg-page border rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700",
-                errors.text ? "border-red-500" : "border-surface-tint"
+                "w-full px-4 py-2 bg-white border rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-blue-500",
+                errors.text ? "border-red-500" : "border-[#DCE9E3]"
               )}
               placeholder="What needs to be done?"
               maxLength={200}
@@ -95,8 +95,8 @@ export default function NewTodoModal({ isOpen, onClose, projects, onSave, defaul
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className={clsx(
-                "w-full px-4 py-2 bg-page border rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700",
-                errors.project_id ? "border-red-500" : "border-surface-tint"
+                "w-full px-4 py-2 bg-white border rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-blue-500",
+                errors.project_id ? "border-red-500" : "border-[#DCE9E3]"
               )}
             >
               {projects.map((p) => (
@@ -112,7 +112,7 @@ export default function NewTodoModal({ isOpen, onClose, projects, onSave, defaul
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full px-4 py-2 bg-page border border-surface-tint rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700"
+                className="w-full px-4 py-2 bg-white border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">None</option>
                 <option value="low">Low</option>
@@ -127,7 +127,7 @@ export default function NewTodoModal({ isOpen, onClose, projects, onSave, defaul
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-4 py-2 bg-page border border-surface-tint rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700"
+                className="w-full px-4 py-2 bg-white border border-[#DCE9E3] rounded-[var(--radius-btn)] text-content focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>

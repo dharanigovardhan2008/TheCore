@@ -425,14 +425,14 @@ export function ReceiptTicketTemplate({
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-4 flex justify-between px-1 pointer-events-none">
           <span className="w-1 h-2 rounded-full bg-blue-500 -rotate-20" />
           <span className="w-1 h-2.5 rounded-full bg-blue-600" />
-          <span className="w-1 h-2 rounded-full bg-purple-500 rotate-20" />
+          <span className="w-1 h-2 rounded-full bg-sky-400 rotate-20" />
         </div>
         <div className="absolute top-1/2 -left-3 -translate-y-1/2 w-2 h-1 rounded-full bg-blue-400" />
         <div className="absolute top-1/2 -right-3 -translate-y-1/2 w-2 h-1 rounded-full bg-blue-600" />
 
         {/* 3D Ticket Icon */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/30 flex items-center justify-center">
-          <div className="w-full h-full rounded-[14px] bg-gradient-to-br from-blue-400 via-indigo-500 to-blue-600 flex items-center justify-center relative overflow-hidden">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-0.5 shadow-lg shadow-blue-500/30 flex items-center justify-center">
+          <div className="w-full h-full rounded-[14px] bg-gradient-to-br from-blue-400 via-blue-600 to-blue-700 flex items-center justify-center relative overflow-hidden">
             <svg className="w-8 h-8 text-white drop-shadow-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" fill="rgba(255,255,255,0.2)" />
               <path d="m9 12 2 2 4-4" />
@@ -474,7 +474,7 @@ export function ReceiptTicketTemplate({
 
         {/* Customer & Card Info Card */}
         <div className="p-3 rounded-2xl bg-slate-50/90 border border-slate-100 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-500 flex items-center justify-center text-white shrink-0 shadow-xs">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="5" width="20" height="14" rx="2" />
               <line x1="2" y1="10" x2="22" y2="10" />
