@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, Receipt } from 'lucide-react';
+import { ReceiptPrinterModal, type ReceiptTicketData } from './ReceiptPrinter';
 
 export type PaymentModalStatus = 'success' | 'failed' | 'pending' | 'loading';
 
@@ -21,6 +22,9 @@ export interface PaymentStatusModalProps {
   isLoadingAction?: boolean;
   onClose?: () => void;
   isStandalonePage?: boolean;
+  showReceiptButton?: boolean;
+  onReceiptClick?: () => void;
+  ticketData?: ReceiptTicketData;
 }
 
 /**
@@ -51,7 +55,12 @@ export default function PaymentStatusModal({
   isLoadingAction = false,
   onClose,
   isStandalonePage = false,
+  showReceiptButton = true,
+  onReceiptClick,
+  ticketData,
 }: PaymentStatusModalProps) {
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+
   // Support Escape key to close
   useEffect(() => {
     if (!isOpen) return;
@@ -150,6 +159,28 @@ export default function PaymentStatusModal({
     );
   };
 
+  // Receipt button in success state
+  const renderReceiptButton = () => {
+    if (!isSuccess || showReceiptButton === false) return null;
+
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          if (onReceiptClick) {
+            onReceiptClick();
+          } else {
+            setIsReceiptModalOpen(true);
+          }
+        }}
+        className="w-full mt-2.5 h-11 sm:h-12 rounded-full font-semibold text-[13px] sm:text-[14px] bg-[#F3F4F6] hover:bg-[#E5E7EB] active:scale-[0.98] text-[#171717] border border-slate-200/60 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs select-none"
+      >
+        <Receipt className="w-4 h-4 text-slate-600" />
+        <span>Receipt</span>
+      </button>
+    );
+  };
+
   // Secondary action rendering (e.g. Cancel on failed state)
   const renderSecondaryAction = () => {
     const text = secondaryButtonText || (isFailed ? 'Cancel' : null);
@@ -238,34 +269,41 @@ export default function PaymentStatusModal({
         {displayDescription}
       </p>
 
-      {/* Action Button */}
+      {/* Action Buttons */}
       <div className="w-full">
         {renderPrimaryButton()}
+        {renderReceiptButton()}
         {renderSecondaryAction()}
       </div>
     </div>
   );
 
-  // If used as a standalone page (like /billing/return)
-  if (isStandalonePage) {
-    return (
-      <div className="min-h-screen bg-[#E9E9ED] flex items-center justify-center p-4">
-        {cardContent}
-      </div>
-    );
-  }
-
-  // If used as a modal overlay on top of another page
   return (
-    <div
-      className="fixed inset-0 z-50 bg-[#E9E9ED]/80 backdrop-blur-xs flex items-center justify-center p-4 transition-all"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && onClose) {
-          onClose();
-        }
-      }}
-    >
-      {cardContent}
-    </div>
+    <>
+      {/* Main Payment Status Modal or Standalone View */}
+      {isStandalonePage ? (
+        <div className="min-h-screen bg-[#E9E9ED] flex items-center justify-center p-4">
+          {cardContent}
+        </div>
+      ) : (
+        <div
+          className="fixed inset-0 z-50 bg-[#E9E9ED]/80 backdrop-blur-xs flex items-center justify-center p-4 transition-all"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && onClose) {
+              onClose();
+            }
+          }}
+        >
+          {cardContent}
+        </div>
+      )}
+
+      {/* Receipt Printing Animation Modal (Triggers on Receipt Button Click) */}
+      <ReceiptPrinterModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        ticketData={ticketData}
+      />
+    </>
   );
 }
