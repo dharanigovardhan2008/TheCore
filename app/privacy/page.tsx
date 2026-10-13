@@ -352,6 +352,11 @@ export default function PrivacyPage() {
                     title: "Preferences",
                     text: "Theme preferences stored in your browser.",
                   },
+                  {
+                    icon: CheckCircle2,
+                    title: "Profession & Workplace",
+                    text: "Your optional profession/role (e.g. Developer, Student) and workplace or organisation name, collected during account setup. Used solely to personalise your experience and displayed in your account settings. Never shared with third parties.",
+                  },
                 ].map(({ icon: Icon, title, text }) => (
                   <li key={title} className="flex items-start gap-3">
                     <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
