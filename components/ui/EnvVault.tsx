@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from 'react'
 import { getEnvFiles } from '@/app/dashboard/vaultActions'
 import { EnvFile } from '@/lib/types'
-import { FileCode, Loader2, ArrowRight } from 'lucide-react'
+import { FileCode, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import LoadingOrb from '@/components/ui/LoadingOrb'
 
 export function EnvVault({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true)
@@ -28,9 +29,13 @@ export function EnvVault({ projectId }: { projectId: string }) {
 
   if (loading) {
     return (
-      <div className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-8 flex flex-col items-center justify-center min-h-[200px]">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--text-tertiary)] mb-4" />
-        <p className="text-[var(--text-secondary)] font-medium">Loading Environment Files...</p>
+      <div className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-8 flex flex-col items-center justify-center min-h-[220px]">
+        <LoadingOrb
+          state="listening"
+          size={64}
+          label="Loading Environment Files..."
+          sublabel="Connecting to secure vault"
+        />
       </div>
     )
   }

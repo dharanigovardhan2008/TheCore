@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import Brand from "@/components/ui/Brand";
+import LoadingOrb from "@/components/ui/LoadingOrb";
 import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 function LoginContent() {
@@ -287,7 +288,20 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center p-4 bg-page">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4 bg-page">
+          <div className="w-full max-w-sm glass rounded-[var(--radius-panel)] p-8 shadow-[var(--shadow-soft)] flex flex-col items-center text-center">
+            <LoadingOrb
+              state="listening"
+              size={64}
+              label="TheCore"
+              sublabel="Loading authentication..."
+            />
+          </div>
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );

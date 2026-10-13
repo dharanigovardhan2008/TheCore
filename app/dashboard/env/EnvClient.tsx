@@ -10,6 +10,7 @@ import { parseEnv, stringifyEnv } from '@/lib/dotenv';
 import { deleteEnvFile, upsertEnvFile } from '../vaultActions';
 import { EnvFileModal } from "@/components/ui/EnvFileModal";
 import { UnlockVaultModal } from "@/components/ui/UnlockVaultModal";
+import LoadingOrb from "@/components/ui/LoadingOrb";
 
 interface EnvClientProps {
   envFiles: EnvFile[];
@@ -121,9 +122,13 @@ export default function EnvClient({ envFiles, projects }: EnvClientProps) {
         <LockedState filteredFiles={filteredFiles} projects={projects} onUnlock={() => setIsUnlockModalOpen(true)} />
       ) : (
         decrypting ? (
-            <div className="flex flex-col items-center justify-center py-24 text-[var(--text-tertiary)]">
-                <Loader2 className="w-8 h-8 animate-spin mb-4" />
-                <p>Decrypting vault...</p>
+            <div className="flex flex-col items-center justify-center py-20">
+                <LoadingOrb
+                  state="listening"
+                  size={64}
+                  label="Decrypting vault..."
+                  sublabel="Deriving keys and parsing environment variables"
+                />
             </div>
         ) : (
             <UnlockedState 

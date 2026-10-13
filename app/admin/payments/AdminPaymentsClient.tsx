@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Filter, Loader2, StickyNote } from 'lucide-react';
+import LoadingOrb from '@/components/ui/LoadingOrb';
 import { getAdminPayments, markOrderRefundNote } from '../actions';
 
 type AdminPaymentItem = Awaited<ReturnType<typeof getAdminPayments>>['orders'][number];
@@ -73,8 +74,13 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
       {/* Orders Table */}
       <div className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--separator)] shadow-sm overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-xs text-[var(--text-content-secondary)] flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> Loading payment records...
+          <div className="py-16 flex flex-col items-center justify-center">
+            <LoadingOrb
+              state="listening"
+              size={64}
+              label="Loading payments..."
+              sublabel="Fetching transactions from Cashfree records"
+            />
           </div>
         ) : orders.length === 0 ? (
           <div className="py-16 text-center text-xs text-[var(--text-content-secondary)]">

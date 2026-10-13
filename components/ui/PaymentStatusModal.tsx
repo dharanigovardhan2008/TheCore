@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Loader2, RefreshCw, Receipt } from 'lucide-react';
+import { ThinkingOrb } from 'thinking-orbs';
 import { ReceiptPrinterModal, type ReceiptTicketData } from './ReceiptPrinter';
 
 export type PaymentModalStatus = 'success' | 'failed' | 'pending' | 'loading';
@@ -250,8 +251,8 @@ export default function PaymentStatusModal({
         )}
 
         {isLoading && (
-          <div className="w-[88px] h-[88px] sm:w-[94px] sm:h-[94px] rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
-            <Loader2 className="w-10 h-10 animate-spin text-[#39B394]" />
+          <div className="w-[88px] h-[88px] sm:w-[94px] sm:h-[94px] rounded-full bg-emerald-500/10 text-[#39B394] flex items-center justify-center">
+            <ThinkingOrb state="listening" size={64} color="#39B394" />
           </div>
         )}
       </div>

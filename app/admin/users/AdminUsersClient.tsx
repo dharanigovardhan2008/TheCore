@@ -10,6 +10,7 @@ import {
   Loader2,
   CheckCircle,
 } from 'lucide-react';
+import LoadingOrb from '@/components/ui/LoadingOrb';
 import {
   getAdminUsers,
   getAdminUserDetail,
@@ -176,8 +177,13 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
       {/* Users Table */}
       <div className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--separator)] shadow-sm overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-xs text-[var(--text-content-secondary)] flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> Loading users...
+          <div className="py-16 flex flex-col items-center justify-center">
+            <LoadingOrb
+              state="listening"
+              size={64}
+              label="Loading users..."
+              sublabel="Fetching registered users from directory"
+            />
           </div>
         ) : users.length === 0 ? (
           <div className="py-16 text-center text-xs text-[var(--text-content-secondary)]">
