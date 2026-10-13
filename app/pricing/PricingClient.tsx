@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Check, Zap, Shield, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { Check, Zap, Shield, ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { PLANS, BillingCycle } from '@/lib/plans';
 import { createCheckoutSession } from '@/app/dashboard/actions';
 
@@ -118,9 +118,10 @@ export default function PricingClient({
           {isLoggedIn ? (
             <Link
               href="/dashboard"
-              className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors"
+              className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors inline-flex items-center gap-1.5 group"
             >
-              Go to Dashboard →
+              <span>Go to Dashboard</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           ) : (
             <Link

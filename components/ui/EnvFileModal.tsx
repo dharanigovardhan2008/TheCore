@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { X, Upload, FileCode, Info } from 'lucide-react'
+import { X, Upload, FileCode, Info, ArrowRight } from 'lucide-react'
 import { parseEnv } from '@/lib/dotenv'
 import { Project } from '@/lib/types'
 
@@ -143,9 +143,10 @@ export function EnvFileModal({ isOpen, onClose, onSave, projects, initialProject
               {error.includes('PLAN_LIMIT_REACHED') && (
                 <Link
                   href="/pricing"
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0 group"
                 >
-                  View Plans & Upgrade →
+                  <span>View Plans & Upgrade</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               )}
             </div>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import LogoUpload from './LogoUpload';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X, Plus, Trash2, FolderPlus } from 'lucide-react';
+import { X, Plus, Trash2, FolderPlus, ArrowRight } from 'lucide-react';
 import { createProjectWithServices, updateProjectWithServices, getUserEmails } from '@/app/dashboard/actions';
 import * as z from 'zod';
 import { ProjectWithRelations, DashboardProject, PROJECT_ACCENTS } from '@/lib/types';
@@ -199,9 +199,10 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
               {error.includes('PLAN_LIMIT_REACHED') && (
                 <Link
                   href="/pricing"
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0 group"
                 >
-                  View Plans & Upgrade →
+                  <span>View Plans & Upgrade</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               )}
             </div>

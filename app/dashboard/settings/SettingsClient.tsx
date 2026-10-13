@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Trash, User, Loader2, Check, FileText, CreditCard, LogOut } from "lucide-react";
+import { AlertTriangle, Trash, User, Loader2, Check, FileText, CreditCard, LogOut, ArrowRight } from "lucide-react";
 import { deleteAccount, updateProfile, signOut } from "./actions";
 
 export default function SettingsClient({ user }: { user: { email: string, name: string } }) {
@@ -130,9 +130,10 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
             </div>
             <Link
               href="/dashboard/settings/billing"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors shrink-0 group"
             >
-              Billing Settings →
+              <span>Billing Settings</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
         </section>
@@ -145,29 +146,29 @@ export default function SettingsClient({ user }: { user: { email: string, name: 
           </div>
           <div className="glass rounded-[var(--radius-panel)] overflow-hidden shadow-[var(--shadow-soft)] p-6 sm:p-8">
             <div className="flex flex-col gap-4">
-              <Link href="/pricing" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
-                Pricing & Plans
-                <span className="text-[var(--text-tertiary)]">→</span>
+              <Link href="/pricing" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between group">
+                <span>Pricing & Plans</span>
+                <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] group-hover:translate-x-0.5 transition-all" />
               </Link>
               <div className="h-px w-full bg-[var(--border-light)]" />
-              <Link href="/refund-policy" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
-                Refund & Cancellation Policy
-                <span className="text-[var(--text-tertiary)]">→</span>
+              <Link href="/refund-policy" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between group">
+                <span>Refund & Cancellation Policy</span>
+                <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] group-hover:translate-x-0.5 transition-all" />
               </Link>
               <div className="h-px w-full bg-[var(--border-light)]" />
-              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
-                Terms of Service
-                <span className="text-[var(--text-tertiary)]">→</span>
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between group">
+                <span>Terms of Service</span>
+                <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] group-hover:translate-x-0.5 transition-all" />
               </Link>
               <div className="h-px w-full bg-[var(--border-light)]" />
-              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
-                Privacy Policy
-                <span className="text-[var(--text-tertiary)]">→</span>
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between group">
+                <span>Privacy Policy</span>
+                <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] group-hover:translate-x-0.5 transition-all" />
               </Link>
               <div className="h-px w-full bg-[var(--border-light)]" />
-              <Link href="/contact" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between">
-                Contact & Support
-                <span className="text-[var(--text-tertiary)]">→</span>
+              <Link href="/contact" className="text-[15px] font-medium text-[var(--text-primary)] hover:text-accent-primary transition-colors flex items-center justify-between group">
+                <span>Contact & Support</span>
+                <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] group-hover:translate-x-0.5 transition-all" />
               </Link>
             </div>
           </div>
