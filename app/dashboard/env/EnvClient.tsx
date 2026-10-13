@@ -122,13 +122,8 @@ export default function EnvClient({ envFiles, projects }: EnvClientProps) {
         <LockedState filteredFiles={filteredFiles} projects={projects} onUnlock={() => setIsUnlockModalOpen(true)} />
       ) : (
         decrypting ? (
-            <div className="flex flex-col items-center justify-center py-20">
-                <LoadingOrb
-                  state="listening"
-                  size={64}
-                  label="Decrypting vault..."
-                  sublabel="Deriving keys and parsing environment variables"
-                />
+            <div className="flex items-center justify-center py-24 w-full">
+                <LoadingOrb state="listening" size={64} />
             </div>
         ) : (
             <UnlockedState 

@@ -177,13 +177,8 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
       {/* Users Table */}
       <div className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--separator)] shadow-sm overflow-hidden">
         {loading ? (
-          <div className="py-16 flex flex-col items-center justify-center">
-            <LoadingOrb
-              state="listening"
-              size={64}
-              label="Loading users..."
-              sublabel="Fetching registered users from directory"
-            />
+          <div className="py-20 flex items-center justify-center w-full">
+            <LoadingOrb state="listening" size={64} />
           </div>
         ) : users.length === 0 ? (
           <div className="py-16 text-center text-xs text-[var(--text-content-secondary)]">

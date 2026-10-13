@@ -27,7 +27,7 @@ export default function LoadingOrb({
   }, []);
 
   return (
-    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
+    <div className={`flex flex-col items-center justify-center ${label ? "gap-3" : ""} ${className}`}>
       <div
         className="relative flex items-center justify-center"
         style={{ width: size, height: size }}
@@ -49,6 +49,31 @@ export default function LoadingOrb({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Full viewport/container centered loading screen with ThinkingOrb right in the middle
+ */
+export function CenteredLoader({
+  minHeight = "min-h-[70vh]",
+  size = 64,
+  state = "listening",
+  color,
+}: {
+  minHeight?: string;
+  size?: OrbSize;
+  state?: OrbState;
+  color?: string;
+}) {
+  return (
+    <div
+      className={`w-full flex items-center justify-center animate-in fade-in duration-200 ${minHeight}`}
+      role="status"
+      aria-label="Loading"
+    >
+      <LoadingOrb state={state} size={size} color={color} />
     </div>
   );
 }

@@ -29,13 +29,8 @@ export function EnvVault({ projectId }: { projectId: string }) {
 
   if (loading) {
     return (
-      <div className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-8 flex flex-col items-center justify-center min-h-[220px]">
-        <LoadingOrb
-          state="listening"
-          size={64}
-          label="Loading Environment Files..."
-          sublabel="Connecting to secure vault"
-        />
+      <div className="glass rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)] p-8 flex items-center justify-center min-h-[220px]">
+        <LoadingOrb state="listening" size={64} />
       </div>
     )
   }
