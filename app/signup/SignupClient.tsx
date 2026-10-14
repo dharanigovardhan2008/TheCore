@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import {
@@ -14,7 +14,6 @@ import {
   Shield,
 } from 'lucide-react';
 import Link from 'next/link';
-import { DEFAULT_AVATARS } from '@/components/ui/AvatarPicker';
 import { CURRENT_TERMS_VERSION } from '@/lib/legal';
 
 const DEFAULT_PROFESSIONS = [
@@ -26,6 +25,9 @@ const DEFAULT_PROFESSIONS = [
   'Product Manager',
   'Other',
 ];
+
+// 20 premium 3D avatars matching ProfileClient.tsx
+const DEFAULT_AVATARS = Array.from({ length: 20 }, (_, i) => `/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`);
 
 export default function SignupClient() {
   const router = useRouter();
@@ -55,12 +57,18 @@ export default function SignupClient() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const codeInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const currentAvatar = avatarUrl || DEFAULT_AVATARS[0];
 
-  // Avatar upload handler
+  // Custom photo upload handler matching ProfileClient.tsx
   const handleCustomUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -103,7 +111,7 @@ export default function SignupClient() {
           }
         }
       } catch {
-        // Fallback
+        // Fallback to client-side data URL
       }
 
       if (!uploadedUrl) {
@@ -125,13 +133,18 @@ export default function SignupClient() {
 
   // Send verification code
   const handleSendVerificationCode = async () => {
-    if (!email || !name || !password || !confirmPassword) {
-      setErrorMsg('Please fill in all required fields');
+    if (!name.trim()) {
+      setErrorMsg('Please enter your full name');
       return;
     }
 
-    if (password !== confirmPassword) {
-      setErrorMsg('Passwords do not match');
+    if (!email.trim()) {
+      setErrorMsg('Please enter your email address');
+      return;
+    }
+
+    if (!password) {
+      setErrorMsg('Please enter a password');
       return;
     }
 
@@ -140,8 +153,21 @@ export default function SignupClient() {
       return;
     }
 
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match');
+      return;
+    }
+
     if (!agreedToTerms) {
       setErrorMsg('You must agree to the Terms and Privacy Policy');
+      return;
+    }
+
+    // Dev Mode Bypass
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
+      setEmailVerificationStep('verify');
+      setSuccessMsg('Dev mode: enter 123456 to verify.');
+      setResendCooldown(60);
       return;
     }
 
@@ -150,24 +176,25 @@ export default function SignupClient() {
 
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: email.trim(),
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true,
         },
       });
 
       if (error) throw error;
 
       setEmailVerificationStep('verify');
-      setSuccessMsg(`Verification code sent to ${email}`);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to send verification code');
+      setResendCooldown(60);
+      setSuccessMsg(`Verification code sent to ${email.trim()}`);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error)?.message || 'Failed to send verification code');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle verification code input
+  // Code input handlers
   const handleCodeChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
@@ -203,7 +230,7 @@ export default function SignupClient() {
     }
   };
 
-  // Verify email code
+  // Verify OTP code
   const handleVerifyEmail = async () => {
     const code = verificationCode.join('');
 
@@ -212,12 +239,21 @@ export default function SignupClient() {
       return;
     }
 
+    // Dev Mode Bypass
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
+      if (code === '123456') {
+        setEmailVerificationStep('verified');
+        setSuccessMsg('Email verified successfully!');
+        return;
+      }
+    }
+
     setVerifyLoading(true);
     setErrorMsg(null);
 
     try {
       const { error } = await supabase.auth.verifyOtp({
-        email,
+        email: email.trim(),
         token: code,
         type: 'email',
       });
@@ -225,20 +261,27 @@ export default function SignupClient() {
       if (error) throw new Error('Invalid or expired code');
 
       setEmailVerificationStep('verified');
-      setSuccessMsg('Email verified successfully!');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Verification failed');
+      setSuccessMsg('Email verified successfully! You can now create your account.');
+    } catch (err: unknown) {
+      setErrorMsg((err as Error)?.message || 'Verification failed');
     } finally {
       setVerifyLoading(false);
     }
   };
 
-  // Create account
+  // Final account creation submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (emailVerificationStep !== 'verified') {
-      setErrorMsg('Please verify your email first');
+      await handleSendVerificationCode();
+      return;
+    }
+
+    // Dev Mode Bypass
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
+      setSuccessMsg('Dev Mode: Account created! Redirecting to dashboard...');
+      setTimeout(() => router.push('/dashboard'), 1000);
       return;
     }
 
@@ -246,57 +289,141 @@ export default function SignupClient() {
     setErrorMsg(null);
 
     try {
-      const finalProfession = profession === 'Other' ? (customProfession.trim() || 'Other') : profession;
+      const finalProfession =
+        profession === 'Other'
+          ? customProfession.trim() || 'Other'
+          : profession || 'Software Developer';
 
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+      // Check if user is already authenticated via verifyOtp session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUser = sessionData?.session?.user;
+
+      if (currentUser) {
+        // User is authenticated via OTP, set password and metadata
+        const { error: updateError } = await supabase.auth.updateUser({
+          password,
           data: {
-            full_name: name,
+            full_name: name.trim(),
             avatar_url: avatarUrl,
             profession: finalProfession,
             workplace: workplace.trim(),
           },
-        },
-      });
+        });
 
-      if (error) throw error;
+        if (updateError) throw updateError;
 
-      if (signUpData?.user) {
-        await supabase.from('profiles').upsert({
-          id: signUpData.user.id,
-          display_name: name,
-          avatar_url: avatarUrl,
-          profession: finalProfession,
-          workplace: workplace.trim(),
-          terms_version: CURRENT_TERMS_VERSION,
-          terms_accepted_at: new Date().toISOString(),
-        }, { onConflict: 'id' });
+        await supabase.from('profiles').upsert(
+          {
+            id: currentUser.id,
+            display_name: name.trim(),
+            avatar_url: avatarUrl,
+            profession: finalProfession,
+            workplace: workplace.trim(),
+            terms_version: CURRENT_TERMS_VERSION,
+            terms_accepted_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        );
+      } else {
+        // Fallback: standard sign up
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              full_name: name.trim(),
+              avatar_url: avatarUrl,
+              profession: finalProfession,
+              workplace: workplace.trim(),
+            },
+          },
+        });
+
+        if (signUpError) throw signUpError;
+
+        if (signUpData?.user) {
+          await supabase.from('profiles').upsert(
+            {
+              id: signUpData.user.id,
+              display_name: name.trim(),
+              avatar_url: avatarUrl,
+              profession: finalProfession,
+              workplace: workplace.trim(),
+              terms_version: CURRENT_TERMS_VERSION,
+              terms_accepted_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          );
+        }
       }
 
-      setSuccessMsg('Account created successfully!');
+      setSuccessMsg('Account created successfully! Redirecting...');
       setTimeout(() => router.push('/dashboard'), 1000);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to create account');
+    } catch (err: unknown) {
+      setErrorMsg((err as Error)?.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
   };
 
-  const maskedEmail = email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length));
+  const handleGoogleAuth = async () => {
+    if (!agreedToTerms) {
+      setErrorMsg('You must agree to the Terms and Privacy Policy before continuing');
+      return;
+    }
+
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
+      alert('[Dev Mode] Simulating Google Auth success. Going to dashboard!');
+      router.push('/dashboard');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: unknown) {
+      setErrorMsg((err as Error)?.message || 'Google authentication failed');
+      setLoading(false);
+    }
+  };
+
+  const maskedEmail = email
+    ? email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(Math.max(1, b.length)))
+    : '';
 
   return (
-    <div className="max-w-[820px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <div className="max-w-[820px] w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Back Navigation */}
-      <Link
-        href="/login"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-6 group"
-      >
-        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-        Back to Login
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors group"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          Back to Login
+        </Link>
+      </div>
+
+      {/* Restrained Sign In / Sign Up Switcher matching Apple/Account design */}
+      <div className="flex bg-[#F4FAF7] p-1.5 rounded-full border border-[var(--border-light)] max-w-xs mx-auto mb-8 shadow-xs">
+        <Link
+          href="/login"
+          className="flex-1 py-2 text-center text-sm font-medium rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+        >
+          Sign In
+        </Link>
+        <span className="flex-1 py-2 text-center text-sm font-semibold rounded-full bg-white text-[var(--text-primary)] shadow-xs">
+          Sign Up
+        </span>
+      </div>
 
       {/* Page Header */}
       <div className="mb-8">
@@ -304,31 +431,30 @@ export default function SignupClient() {
           Create Your Account
         </h1>
         <p className="text-sm text-[var(--text-secondary)]">
-          Join TheCore and start managing your projects
+          Join TheCore and start managing your side projects
         </p>
       </div>
 
-      {/* Success Message */}
+      {/* Success Message Alert */}
       {successMsg && (
-        <div className="mb-6 p-4 rounded-[20px] bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+        <div className="mb-6 p-4 rounded-[20px] bg-emerald-50 border border-emerald-200 flex items-center gap-3 animate-in fade-in">
           <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
           <span className="text-sm font-medium text-emerald-900">{successMsg}</span>
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Error Message Alert */}
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-[20px] bg-red-50 border border-red-200 flex items-center gap-3">
+        <div className="mb-6 p-4 rounded-[20px] bg-red-50 border border-red-200 flex items-center gap-3 animate-in fade-in">
           <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
           <span className="text-sm font-medium text-red-900">{errorMsg}</span>
         </div>
       )}
 
-      {/* Main Signup Card */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-[28px] border border-[var(--border-light)] shadow-sm">
+      {/* Main Profile / Signup Card */}
+      <form onSubmit={handleSubmit} className="bg-white rounded-[28px] border border-[var(--border-light)] shadow-sm overflow-hidden">
         <div className="p-8 space-y-8">
-
-          {/* Avatar Section */}
+          {/* Avatar Section - Exact mirror of ProfileClient.tsx */}
           <div>
             <label className="block text-sm font-semibold text-[var(--text-primary)] mb-4">
               Profile Picture
@@ -406,13 +532,12 @@ export default function SignupClient() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              disabled={emailVerificationStep !== 'form'}
-              className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
               placeholder="Alex Rivera"
             />
           </div>
 
-          {/* Email */}
+          {/* Email Address */}
           <div>
             <label htmlFor="email" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
               Email Address
@@ -423,9 +548,14 @@ export default function SignupClient() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={emailVerificationStep !== 'form'}
-                className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailVerificationStep === 'verified') {
+                    setEmailVerificationStep('form');
+                  }
+                }}
+                disabled={emailVerificationStep === 'verify'}
+                className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
                 placeholder="you@example.com"
               />
               {emailVerificationStep === 'verified' && (
@@ -437,25 +567,25 @@ export default function SignupClient() {
             </div>
             {emailVerificationStep === 'form' && (
               <p className="text-xs text-[var(--text-secondary)] mt-1.5">
-                We'll send you a verification code
+                We will send you a 6-digit verification code to confirm your email
               </p>
             )}
           </div>
 
-          {/* Email Verification Section */}
+          {/* Email Verification Box (Shown when emailVerificationStep === 'verify') */}
           {emailVerificationStep === 'verify' && (
-            <div className="p-6 rounded-[20px] bg-blue-50 border border-blue-200 flex flex-col items-center">
+            <div className="p-6 rounded-[20px] bg-blue-50 border border-blue-200 flex flex-col items-center animate-in fade-in">
               <div className="text-center mb-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Mail className="w-8 h-8 text-blue-600" />
+                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Mail className="w-7 h-7 text-blue-600" />
                 </div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-1">Verify your email</h4>
-                <p className="text-sm text-blue-700">
-                  We sent a 6-digit code to <span className="font-medium">{maskedEmail}</span>
+                <h4 className="text-base font-semibold text-blue-900 mb-1">Verify your email</h4>
+                <p className="text-xs sm:text-sm text-blue-700">
+                  Enter the 6-digit code sent to <span className="font-semibold text-blue-900">{maskedEmail}</span>
                 </p>
               </div>
 
-              <div className="flex justify-center gap-2 mb-4" onPaste={handleCodePaste}>
+              <div className="flex justify-center gap-2 sm:gap-3 mb-5" onPaste={handleCodePaste}>
                 {verificationCode.map((digit, index) => (
                   <input
                     key={index}
@@ -468,18 +598,18 @@ export default function SignupClient() {
                     value={digit}
                     onChange={(e) => handleCodeChange(index, e.target.value)}
                     onKeyDown={(e) => handleCodeKeyDown(index, e)}
-                    className="w-12 h-14 text-center text-xl font-bold bg-white border-2 border-blue-200 rounded-xl text-[var(--text-primary)] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+                    className="w-11 sm:w-12 h-13 sm:h-14 text-center text-xl font-bold bg-white border border-blue-200 rounded-xl text-[var(--text-primary)] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
                     disabled={verifyLoading}
                   />
                 ))}
               </div>
 
-              <div className="space-y-3 w-full">
+              <div className="space-y-3 w-full max-w-xs">
                 <button
                   type="button"
                   onClick={handleVerifyEmail}
                   disabled={verifyLoading || verificationCode.join('').length !== 6}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-sm font-semibold rounded-full transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs"
                 >
                   {verifyLoading ? (
                     <>
@@ -487,16 +617,28 @@ export default function SignupClient() {
                       Verifying...
                     </>
                   ) : (
-                    'Verify Email'
+                    'Verify Code'
                   )}
                 </button>
 
-                <div className="flex items-center justify-center gap-4 text-sm">
+                <div className="flex items-center justify-center gap-4 text-xs font-medium">
                   <button
                     type="button"
-                    onClick={() => setEmailVerificationStep('form')}
+                    onClick={handleSendVerificationCode}
+                    disabled={resendCooldown > 0 || verifyLoading}
+                    className="text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
+                  >
+                    {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
+                  </button>
+                  <span className="text-blue-300">•</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailVerificationStep('form');
+                      setVerificationCode(['', '', '', '', '', '']);
+                    }}
                     disabled={verifyLoading}
-                    className="text-blue-700 hover:text-blue-800 transition-colors disabled:opacity-50"
+                    className="text-slate-600 hover:text-slate-900 transition-colors"
                   >
                     Change email
                   </button>
@@ -505,48 +647,43 @@ export default function SignupClient() {
             </div>
           )}
 
-          {/* Password Fields - Only show after verification */}
-          {emailVerificationStep === 'verified' && (
-            <>
-              {/* Divider */}
-              <div className="border-t border-[var(--border-light)]" />
+          {/* Password & Confirm Password */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+                placeholder="At least 6 characters"
+              />
+            </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
-                  placeholder="At least 6 characters"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
-                  placeholder="Re-enter your password"
-                />
-              </div>
-            </>
-          )}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+                placeholder="Re-enter password"
+              />
+            </div>
+          </div>
 
           {/* Divider */}
           <div className="border-t border-[var(--border-light)]" />
 
-          {/* Profession */}
+          {/* Profession Selection - Exact mirror of ProfileClient.tsx */}
           <div>
             <label className="block text-sm font-semibold text-[var(--text-primary)] mb-3">
               Profession
@@ -557,12 +694,11 @@ export default function SignupClient() {
                   key={prof}
                   type="button"
                   onClick={() => setProfession(prof)}
-                  disabled={emailVerificationStep !== 'form'}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                     profession === prof
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'bg-[#F4FAF7] hover:bg-slate-100 text-slate-700 border border-[var(--border-light)]'
-                  } ${emailVerificationStep !== 'form' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  }`}
                 >
                   {prof}
                 </button>
@@ -575,14 +711,13 @@ export default function SignupClient() {
                 required
                 value={customProfession}
                 onChange={(e) => setCustomProfession(e.target.value)}
-                disabled={emailVerificationStep !== 'form'}
-                className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+                className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
                 placeholder="Specify your profession"
               />
             )}
           </div>
 
-          {/* Workplace */}
+          {/* Workplace / Organization */}
           <div>
             <label htmlFor="workplace" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
               Workplace / Organization
@@ -592,34 +727,68 @@ export default function SignupClient() {
               type="text"
               value={workplace}
               onChange={(e) => setWorkplace(e.target.value)}
-              disabled={emailVerificationStep !== 'form'}
-              className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full px-5 py-3 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] text-[var(--text-primary)] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
               placeholder="Google, MIT, Freelancer, Stealth Startup..."
             />
           </div>
 
-          {/* Terms Checkbox - Only show before verification */}
-          {emailVerificationStep === 'form' && (
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-[var(--border-light)] text-blue-600 focus:ring-2 focus:ring-blue-500/20"
-              />
-              <label htmlFor="terms" className="text-sm text-[var(--text-primary)]">
-                I agree to the{' '}
-                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  Terms of Service
-                </a>{' '}
-                and{' '}
-                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  Privacy Policy
-                </a>
-              </label>
+          {/* Terms & Privacy Consent Checkbox */}
+          <div className="flex items-start gap-3 pt-1">
+            <input
+              type="checkbox"
+              id="terms"
+              required
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-1 w-4 h-4 rounded border-[#DCE9E3] text-blue-600 focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+            />
+            <label htmlFor="terms" className="text-sm text-[var(--text-secondary)] leading-relaxed cursor-pointer select-none">
+              I agree to the{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">
+                Terms of Service
+              </a>{' '}
+              and{' '}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">
+                Privacy Policy
+              </a>
+            </label>
+          </div>
+
+          {/* Google Auth Divider & Button */}
+          <div className="pt-2">
+            <div className="relative flex items-center justify-center my-4">
+              <div className="border-t border-[var(--border-light)] w-full" />
+              <span className="bg-white px-3 text-xs text-[var(--text-secondary)] uppercase tracking-wider absolute">
+                Or
+              </span>
             </div>
-          )}
+            <button
+              type="button"
+              onClick={handleGoogleAuth}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-full border border-[var(--border-light)] bg-[#F4FAF7] hover:bg-slate-100 text-[var(--text-primary)] text-sm font-medium transition-all"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              Sign up with Google
+            </button>
+          </div>
         </div>
 
         {/* Form Footer */}
@@ -628,53 +797,35 @@ export default function SignupClient() {
             href="/login"
             className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Already have an account? Sign in
+            Already have an account? <span className="font-semibold text-blue-600">Sign in</span>
           </Link>
 
-          {emailVerificationStep === 'form' && (
-            <button
-              type="button"
-              onClick={handleSendVerificationCode}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-sm font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4" />
-                  Send Verification Code
-                </>
-              )}
-            </button>
-          )}
-
-          {emailVerificationStep === 'verified' && (
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-sm font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4" />
-                  Create Account
-                </>
-              )}
-            </button>
-          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-sm font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {emailVerificationStep === 'form' ? 'Verifying...' : 'Creating...'}
+              </>
+            ) : emailVerificationStep === 'verified' ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Create Account
+              </>
+            ) : (
+              <>
+                <Mail className="w-4 h-4" />
+                Send Verification Code
+              </>
+            )}
+          </button>
         </div>
       </form>
 
-      {/* Avatar Modal */}
+      {/* 20 Avatars Modal - Exact replica of ProfileClient.tsx */}
       {showAvatarModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="max-w-3xl w-full bg-white rounded-[28px] shadow-2xl border border-[var(--border-light)] max-h-[85vh] flex flex-col overflow-hidden">

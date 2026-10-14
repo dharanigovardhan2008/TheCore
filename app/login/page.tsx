@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
+import Link from "next/link";
 import Brand from "@/components/ui/Brand";
 import LoadingOrb from "@/components/ui/LoadingOrb";
 import AvatarPicker, { DEFAULT_AVATARS } from "@/components/ui/AvatarPicker";
@@ -261,21 +262,20 @@ function LoginContent() {
         </div>
 
         {mode !== "complete_google_signup" && (
-          <div className="flex bg-surface-tint p-1 rounded-lg mb-6">
+          <div className="flex bg-[#F4FAF7] p-1.5 rounded-full border border-[var(--border-light)] max-w-xs mx-auto mb-6 shadow-xs">
             <button
               type="button"
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "login" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
+              className={`flex-1 py-2 text-center text-sm font-semibold rounded-full transition-colors ${mode === "login" ? "bg-white text-[var(--text-primary)] shadow-xs" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
               onClick={() => { setMode("login"); setError(null); setEmailVerified(false); }}
             >
               Sign In
             </button>
-            <button
-              type="button"
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "signup" ? "bg-surface shadow-sm text-content" : "text-content-secondary hover:text-content"}`}
-              onClick={() => { setMode("signup"); setError(null); setEmailVerified(false); }}
+            <Link
+              href="/signup"
+              className="flex-1 py-2 text-center text-sm font-medium rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               Sign Up
-            </button>
+            </Link>
           </div>
         )}
 
@@ -403,18 +403,18 @@ function LoginContent() {
                 className="mt-1"
               />
               <label htmlFor="terms" className="text-sm text-content">
-                I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline">Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline">Privacy Policy</a>
+                I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Privacy Policy</a>
               </label>
             </div>
           )}
 
-          {error && <div className="text-red-500 text-sm p-3 bg-red-50 rounded-[var(--radius-btn)] border border-red-200">{error}</div>}
+          {error && <div className="text-red-500 text-sm p-3 bg-red-50 rounded-2xl border border-red-200">{error}</div>}
 
           <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-accent-primary text-white rounded-[var(--radius-btn)] font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="w-full py-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               {loading ? "Please wait..." : mode === "login" ? "Sign In" : mode === "complete_google_signup" ? "Complete Account" : emailVerified ? "Create Account" : "Send Verification Code"}
             </button>
@@ -424,16 +424,16 @@ function LoginContent() {
         {mode !== "complete_google_signup" && (
           <>
             <div className="mt-6 flex items-center justify-center gap-3">
-              <div className="h-px bg-surface-tint flex-1" />
+              <div className="h-px bg-slate-200 flex-1" />
               <span className="text-content-hint text-xs font-medium uppercase tracking-wider">or</span>
-              <div className="h-px bg-surface-tint flex-1" />
+              <div className="h-px bg-slate-200 flex-1" />
             </div>
 
             <button
               type="button"
               onClick={handleGoogleAuth}
               disabled={loading}
-              className="mt-6 w-full flex items-center justify-center gap-3 py-3 bg-surface border border-surface-tint text-content rounded-[var(--radius-btn)] font-medium hover:bg-surface-tint transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="mt-6 w-full flex items-center justify-center gap-3 py-3 bg-white border border-[#DCE9E3] text-content rounded-full font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
