@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { DM_Sans, Caveat } from "next/font/google";
+import NavigationLoader from "@/components/ui/NavigationLoader";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -59,9 +61,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} ${caveat.variable} antialiased`}>
       <body className="flex flex-col min-h-[100dvh] m-0 p-0 selection:bg-tint selection:text-white">
+        <Suspense fallback={null}>
+          <NavigationLoader />
+        </Suspense>
         {children}
       </body>
     </html>
   );
 }
-

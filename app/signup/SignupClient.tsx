@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Brand from '@/components/ui/Brand';
+import LoadingOrb from '@/components/ui/LoadingOrb';
 import { CURRENT_TERMS_VERSION } from '@/lib/legal';
 
 const DEFAULT_PROFESSIONS = [
@@ -385,8 +386,8 @@ export default function SignupClient() {
     }
 
     if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
-      alert('[Dev Mode] Simulating Google Auth success. Going to dashboard!');
-      router.push('/dashboard');
+      alert('[Dev Mode] Simulating Google Auth success. Going to profile settings!');
+      router.push('/dashboard/settings/profile');
       return;
     }
 
@@ -396,7 +397,7 @@ export default function SignupClient() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?signup=true&next=/dashboard/settings/profile`,
         },
       });
       if (error) throw error;
@@ -412,6 +413,20 @@ export default function SignupClient() {
 
   return (
     <>
+      {/* Full Page Loading Animation Overlay */}
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-2xl border border-slate-200/90 shadow-2xl flex flex-col items-center text-center max-w-xs w-full">
+            <LoadingOrb state="connecting" size={64} withContainer={false} />
+            <p className="text-sm font-semibold text-slate-800 mt-4 tracking-tight">
+              Connecting...
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Please wait while we redirect you
+            </p>
+          </div>
+        </div>
+      )}
       {/* Centered Signup Card - Same max-width and sizing as Login page (max-w-md) */}
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-[28px] border border-[var(--border-light)] shadow-[var(--shadow-shell-soft)] transition-all my-auto">
         {/* Brand & Header matching Login page */}

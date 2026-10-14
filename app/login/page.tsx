@@ -223,8 +223,8 @@ function LoginContent() {
 
     // Dev Mode Bypass
     if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("mock-project")) {
-      alert("[Dev Mode] Simulating Google Auth success. Going to dashboard!");
-      router.push("/dashboard");
+      alert("[Dev Mode] Simulating Google Auth success. Going to profile settings!");
+      router.push(mode === "signup" ? "/dashboard/settings/profile" : "/dashboard");
       return;
     }
 
@@ -234,7 +234,7 @@ function LoginContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?signup=${mode === "signup"}&next=/dashboard/settings/profile`,
         },
       });
       if (error) throw error;
@@ -261,6 +261,21 @@ function LoginContent() {
 
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 md:p-8 gradient-bg">
+      {/* Full Page Loading Animation Overlay */}
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="p-6 rounded-[28px] bg-white/95 backdrop-blur-2xl border border-slate-200/90 shadow-2xl flex flex-col items-center text-center max-w-xs w-full">
+            <LoadingOrb state="connecting" size={64} withContainer={false} />
+            <p className="text-sm font-semibold text-slate-800 mt-4 tracking-tight">
+              {mode === "login" ? "Signing In..." : "Connecting..."}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Please wait while we redirect you
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className={`w-full ${mode === "signup" || mode === "complete_google_signup" ? "max-w-xl" : "max-w-md"} bg-surface p-6 sm:p-8 rounded-[var(--radius-shell)] shadow-[var(--shadow-shell-soft)] transition-all my-auto`}>
         <div className="text-center mb-6">
           <div className="mb-4 flex justify-center">

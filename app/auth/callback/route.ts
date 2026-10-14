@@ -53,10 +53,28 @@ export async function GET(request: Request) {
           { onConflict: 'id' }
         )
 
-      // Check if new user (created within the last 30 seconds)
-      const isNewUser = new Date(data.user.created_at).getTime() > Date.now() - 30000
-      if (isNewUser) {
-        return NextResponse.redirect(`${requestUrl.origin}/login?mode=complete_google_signup`)
+      const next = requestUrl.searchParams.get('next')
+      const isSignup = requestUrl.searchParams.get('signup') === 'true'
+
+      // Check if new user (created within the last 60 seconds)
+      const isNewUser = new Date(data.user.created_at).getTime() > Date.now() - 60000
+
+      // Check if profile is incomplete (missing profession or workplace)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('profession, workplace')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      const isProfileIncomplete = !profile?.profession || !profile?.workplace
+
+      // If user created an account via Google sign up or has an incomplete profile, redirect to update profile page
+      if (isNewUser || isSignup || isProfileIncomplete || next === '/dashboard/settings/profile') {
+        return NextResponse.redirect(`${requestUrl.origin}/dashboard/settings/profile`)
+      }
+
+      if (next) {
+        return NextResponse.redirect(`${requestUrl.origin}${next}`)
       }
     }
   }
