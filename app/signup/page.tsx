@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <div className="min-h-[100dvh] w-full authenticated-shell flex flex-col justify-center">
+    <div className="min-h-[100dvh] w-full authenticated-shell flex items-center justify-center p-4 sm:p-6 md:p-8">
       <Suspense
         fallback={
           <div className="min-h-[60vh] flex items-center justify-center w-full">

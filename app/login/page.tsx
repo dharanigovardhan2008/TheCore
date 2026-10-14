@@ -10,6 +10,7 @@ import LoadingOrb from "@/components/ui/LoadingOrb";
 import AvatarPicker, { DEFAULT_AVATARS } from "@/components/ui/AvatarPicker";
 import EmailVerification from "@/components/ui/EmailVerification";
 import { CURRENT_TERMS_VERSION } from "@/lib/legal";
+import { AlertCircle, X } from "lucide-react";
 
 const DEFAULT_PROFESSIONS = [
   "Software Developer",
@@ -55,6 +56,16 @@ function LoginContent() {
       });
     }
   }, [mode, supabase]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && error) {
+        setError(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [error]);
 
   const handleSendVerificationCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -408,8 +419,6 @@ function LoginContent() {
             </div>
           )}
 
-          {error && <div className="text-red-500 text-sm p-3 bg-red-50 rounded-2xl border border-red-200">{error}</div>}
-
           <div className="pt-2">
             <button
               type="submit"
@@ -449,6 +458,50 @@ function LoginContent() {
           By continuing, you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-content">Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-content">Privacy Policy</a>.
         </p>
       </div>
+
+      {/* POPUP ERROR MODAL IN THE MIDDLE OF THE PAGE */}
+      {error && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setError(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bg-white rounded-[24px] max-w-sm w-full p-6 text-center shadow-2xl border border-[var(--border-light)] scale-in-95 animate-in duration-150 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3.5 shadow-xs">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-base font-bold text-[var(--text-primary)] mb-1.5">
+              Notice
+            </h3>
+
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-5">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="w-full py-2.5 px-4 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              Understood
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
