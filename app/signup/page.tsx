@@ -4,15 +4,17 @@ import LoadingOrb from '@/components/ui/LoadingOrb';
 
 export default function SignupPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center w-full bg-page">
-          <LoadingOrb state="listening" size={64} />
-        </div>
-      }
-    >
-      <SignupClient />
-    </Suspense>
+    <div className="gradient-bg">
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center w-full">
+            <LoadingOrb state="listening" size={64} />
+          </div>
+        }
+      >
+        <SignupClient />
+      </Suspense>
+    </div>
   );
 }
 
