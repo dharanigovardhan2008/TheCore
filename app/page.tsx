@@ -1,1177 +1,384 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import type { ElementType, ReactNode } from "react";
-import Brand from "@/components/ui/Brand";
-import { createClient } from "@/utils/supabase/server";
-import { signOut } from "@/app/dashboard/settings/actions";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://thecore.indevs.in';
-
-export const metadata: Metadata = {
-  title: "TheCore: track your projects, hosting platforms and .env files",
-  description: "TheCore is your personal vault for developer side projects. Securely track your hosting platforms, databases, and encrypt your .env files in one place.",
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    title: "TheCore: track your projects, hosting platforms and .env files",
-    description: "TheCore is your personal vault for developer side projects. Securely track your hosting platforms, databases, and encrypt your .env files in one place.",
-    url: siteUrl,
-    siteName: "TheCore",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "TheCore: track your projects, hosting platforms and .env files",
-    description: "TheCore is your personal vault for developer side projects. Securely track your hosting platforms, databases, and encrypt your .env files in one place.",
-  },
-  verification: {
-    google: "google-site-verification-token",
-    other: {
-      "msvalidate.01": "bing-site-verification-token",
-    },
-  },
-};
 import {
   ArrowRight,
-  ArrowUpRight,
-  CheckCircle2,
   ChevronDown,
   Command,
-  Database,
-  FileText,
-  Fingerprint,
-  Globe,
-  Clock,
-  LayoutDashboard,
-  LockKeyhole,
-  MousePointer2,
-  Check,
-  Plus,
-  Shield,
-  LogOut,
-  FolderKanban,
-  CheckSquare,
-  Layers,
-  Zap,
+  Download,
+  KeyRound,
+  ListChecks,
+  Lock,
+  Mail,
+  Search,
+  ShieldCheck,
   Smartphone,
-  Palette,
+  Users,
 } from "lucide-react";
+import Brand from "@/components/ui/Brand";
+import { createClient } from "@/utils/supabase/server";
+import { PLANS } from "@/lib/plans-display";
+import PricingSection from "./PricingSection";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thecore.indevs.in";
+const OWNER_NAME = "Dharani"; // confirm: shown in the founder note and must match your legal pages
+
+const title = "TheCore: track your projects, hosting platforms and .env files";
+const description =
+  "Keep every side project's hosting platforms, login emails, to-dos and encrypted .env files in one place. Free for 3 projects.";
+
+const google = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bing = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION;
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: "/" },
+  openGraph: { title, description, url: siteUrl, siteName: "TheCore", type: "website" },
+  twitter: { card: "summary_large_image", title, description },
+  ...(google || bing
+    ? {
+        verification: {
+          ...(google ? { google } : {}),
+          ...(bing ? { other: { "msvalidate.01": bing } } : {}),
+        },
+      }
+    : {}),
+};
+
+const questions = [
+  ["Which host is this project on?", "Every project lists its platforms: frontend, backend, database and domain."],
+  ["Which of my 10 emails did I sign up with?", "Each platform stores the login email you used, so you never guess again."],
+  ["What was left to do?", "Per-project to-dos with priority and due dates."],
+  ["What was in that .env?", "Saved encrypted, in your browser, behind a master password."],
+];
 
 const steps = [
-  {
-    number: "01",
-    title: "Start with a space.",
-    description:
-      "Create a home for the projects, resources, and tools you use every day.",
-    icon: LayoutDashboard,
-  },
-  {
-    number: "02",
-    title: "Bring it together.",
-    description:
-      "Keep your digital essentials organized and easier to access.",
-    icon: FolderKanban,
-  },
-  {
-    number: "03",
-    title: "Move forward.",
-    description:
-      "Spend less energy managing your space and more time making progress.",
-    icon: MousePointer2,
-  },
+  ["Add a project", "Name it, set its status and add the repo and live links."],
+  ["Record where it lives", "Add each platform and the email you logged in with."],
+  ["Lock the .env, list the to-dos", "Paste your .env files and note what is left."],
 ];
 
 const faqs = [
-  {
-    question: "What is TheCore?",
-    answer:
-      "TheCore is a digital workspace designed to bring projects, resources, and useful tools together in a clean, organized experience.",
-  },
-  {
-    question: "How do I get started?",
-    answer:
-      "Select Get started to open the sign-in page. The features available to you depend on your account and the current application implementation.",
-  },
-  {
-    question: "Can I use TheCore on mobile?",
-    answer:
-      "This landing page is responsive and designed for desktop, tablet, and mobile screens.",
-  },
-  {
-    question: "Is TheCore free?",
-    answer:
-      "TheCore is free during its Early Access period. Any future pricing changes should be communicated clearly before paid access begins.",
-  },
-  {
-    question: "Where can I learn about privacy?",
-    answer:
-      "Visit the Privacy Policy, Terms of Service, and Cookie Policy linked in the footer.",
-  },
+  ["What is TheCore?", "TheCore is a place to keep, for each of your side projects, where it is hosted, which email you used to log in, what is left to do, and its encrypted .env files."],
+  ["Is it free?", `Yes. The Free plan lets you keep up to ${PLANS.free.projects} projects for free, forever. Pro removes the limits.`],
+  ["Is Pro a subscription?", "No. Pro is a prepaid pass for 1 month or 12 months. It does not renew automatically, so you are never charged by surprise."],
+  ["What happens when Pro ends?", "Your data stays. You can still view and export everything, but you cannot add items above the Free limits until you upgrade again."],
+  ["Do you store my hosting passwords?", "No. TheCore only stores platform names and the email you used. Keep passwords in a password manager."],
+  ["Can you read my .env files?", "No. They are encrypted in your browser before they are saved. We cannot read them, and we cannot recover your master password if you lose it."],
+  ["Is everything end-to-end encrypted?", "No, only the .env files are. Project names, platforms, login emails, notes and to-dos are stored normally so the app can search and show them."],
+  ["Can I export or delete my data?", "Yes. You can export everything as JSON and delete your account from Settings."],
+  ["Can I get a refund?", "See the Refund Policy for the rules."],
 ];
 
-function Eyebrow({ children }: { children: ReactNode }) {
+const sampleProjects = [
+  { name: "Seatsync", status: "Deployed", dot: "bg-emerald-500", platform: "Vercel", email: "work@gmail.com", todos: 2 },
+  { name: "Academe", status: "Deployed", dot: "bg-emerald-500", platform: "Render", email: "acad.dev@gmail.com", todos: 1 },
+  { name: "Pocket Ledger", status: "In progress", dot: "bg-blue-500", platform: "Netlify", email: "side.projects@gmail.com", todos: 3 },
+];
+
+function SampleDashboard() {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3.5 py-2 text-xs font-medium tracking-wide text-blue-700 shadow-sm">
-      <span className="h-2 w-2 rounded-full bg-blue-600" />
-      {children}
-    </div>
-  );
-}
-
-/*
- * This is a decorative product preview.
- * The actual dashboard opens at /dashboard.
- */
-function WorkspacePreview() {
-  const navigationItems = [
-    { icon: LayoutDashboard, label: "Overview" },
-    { icon: FolderKanban, label: "Projects" },
-    { icon: FileText, label: "Resources" },
-    { icon: CheckSquare, label: "Tasks" },
-  ];
-
-  const quickLinks = [
-    { icon: Database, label: "Digital resources" },
-    { icon: CheckSquare, label: "Tasks and notes" },
-    { icon: Globe, label: "Useful links" },
-  ];
-
-  return (
-    <div className="relative mx-auto w-full max-w-[570px]">
-      <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[60px] bg-blue-100/60 blur-[65px]" />
-
-      <div className="relative rounded-[30px] border border-slate-200/90 bg-white p-2 shadow-[0_35px_100px_-45px_rgba(15,23,42,0.25)] sm:p-3">
-        <div className="overflow-hidden rounded-[23px] border border-slate-100 bg-white">
-          <div className="flex h-14 items-center justify-between border-b border-slate-100 px-4 sm:px-5">
-            <Brand compact />
-
-            <div className="flex gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-slate-200" />
-              <span className="h-2 w-2 rounded-full bg-slate-200" />
-              <span className="h-2 w-2 rounded-full bg-slate-200" />
-            </div>
-          </div>
-
-          <div className="grid min-h-[390px] grid-cols-[55px_1fr] sm:grid-cols-[145px_1fr]">
-            <aside className="border-r border-slate-100 bg-slate-50/70 p-2 sm:p-3">
-              <p className="mb-4 hidden px-2 pt-2 text-[9px] font-semibold tracking-[0.16em] text-slate-400 sm:block">
-                WORKSPACE
+    <figure className="mx-auto w-full max-w-md">
+      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/5 sm:p-5">
+        <p className="px-1 pb-3 text-sm font-semibold text-slate-900">Projects</p>
+        <ul className="space-y-3">
+          {sampleProjects.map((p) => (
+            <li key={p.name} className="rounded-2xl bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-slate-900">{p.name}</span>
+                <span className="flex items-center gap-2 text-sm text-slate-600">
+                  <span className={`h-2 w-2 rounded-full ${p.dot}`} aria-hidden />
+                  {p.status}
+                </span>
+              </div>
+              <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                <Mail size={15} className="shrink-0 text-blue-600" aria-hidden />
+                <span className="truncate">
+                  <span className="font-medium">{p.platform}</span> with {p.email}
+                </span>
               </p>
-
-              {navigationItems.map(({ icon: Icon, label }, index) => (
-                <div
-                  key={label}
-                  className={`mb-1 flex items-center justify-center gap-2 rounded-xl px-2 py-2.5 sm:justify-start sm:px-2.5 ${
-                    index === 0
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-slate-500"
-                  }`}
-                >
-                  <Icon size={16} />
-                  <span className="hidden text-[11px] font-medium sm:inline">
-                    {label}
-                  </span>
-                </div>
-              ))}
-            </aside>
-
-            <div className="min-w-0 p-3.5 sm:p-6">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-[10px] font-medium text-slate-400">
-                    YOUR WORKSPACE
-                  </p>
-
-                  <h3 className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-slate-950 sm:text-2xl">
-                    A little more focus.
-                  </h3>
-
-                  <p className="mt-2 text-[10px] leading-5 text-slate-500 sm:text-xs">
-                    Everything starts here.
-                  </p>
-                </div>
-
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-blue-700">
-                  D
-                </div>
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-7 sm:gap-3">
-                <div className="rounded-2xl border border-slate-200 p-3 sm:p-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <FolderKanban size={17} />
-                  </div>
-
-                  <p className="mt-3 text-[10px] text-slate-500 sm:text-xs">
-                    Your projects
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
-                    All in one place
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 p-3 sm:p-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                    <CheckCircle2 size={17} />
-                  </div>
-
-                  <p className="mt-3 text-[10px] text-slate-500 sm:text-xs">
-                    Your workflow
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
-                    Clear and simple
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3.5 rounded-2xl border border-slate-200 p-3.5 sm:mt-4 sm:p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-900 sm:text-sm">
-                    Quick access
-                  </span>
-                  <ArrowUpRight size={15} className="text-slate-400" />
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {quickLinks.map(({ icon: Icon, label }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-2.5 rounded-xl bg-slate-50/90 p-2.5 sm:gap-3 sm:p-3"
-                    >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-100 bg-white text-slate-600">
-                        <Icon size={14} />
-                      </span>
-
-                      <span className="text-[10px] font-medium text-slate-700 sm:text-xs">
-                        {label}
-                      </span>
-
-                      <ArrowRight
-                        size={13}
-                        className="ml-auto text-slate-400"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <p className="mt-3 text-center text-[9px] text-slate-400">
-                Product preview
-              </p>
-
-              <Link
-                href="/dashboard"
-                className="mt-3 flex items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-xs font-semibold text-white transition hover:bg-blue-700"
-              >
-                Open actual dashboard <ArrowRight size={14} />
-              </Link>
-            </div>
-          </div>
-        </div>
+              <p className="mt-1 text-sm text-slate-500">{p.todos} open to-dos</p>
+            </li>
+          ))}
+        </ul>
       </div>
-
-      <div className="absolute -right-2 top-[20%] hidden items-center gap-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl shadow-slate-900/[0.06] sm:flex">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-          <Palette size={18} />
-        </span>
-
-        <div>
-          <p className="text-xs font-semibold text-slate-900">
-            Thoughtfully designed
-          </p>
-          <p className="mt-1 text-[10px] text-slate-500">
-            Less clutter, more clarity
-          </p>
-        </div>
-      </div>
-    </div>
+      <figcaption className="mt-3 text-center text-sm text-slate-500">Sample data</figcaption>
+    </figure>
   );
 }
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const signedIn = Boolean(user);
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebApplication",
-        "name": "TheCore",
-        "url": siteUrl,
-        "description": "TheCore is your personal vault for developer side projects. Securely track your hosting platforms, databases, and encrypt your .env files in one place.",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "All",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
+        name: "TheCore",
+        url: siteUrl,
+        description,
+        applicationCategory: "DeveloperApplication",
+        operatingSystem: "Any",
+        offers: [
+          { "@type": "Offer", name: "Free", price: "0", priceCurrency: "INR" },
+          { "@type": "Offer", name: "Pro, 1 month", price: String(PLANS.pro.monthlyInr), priceCurrency: "INR" },
+          { "@type": "Offer", name: "Pro, 12 months", price: String(PLANS.pro.yearlyInr), priceCurrency: "INR" },
+        ],
       },
       {
         "@type": "FAQPage",
-        "mainEntity": faqs.map((faq) => ({
+        mainEntity: faqs.map(([q, a]) => ({
           "@type": "Question",
-          "name": faq.question,
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": faq.answer
-          }
-        }))
-      }
-    ]
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      },
+    ],
   };
+
+  const primary = signedIn ? "/dashboard" : "/signup";
+  const primaryLabel = signedIn ? "Open dashboard" : "Start free";
+  const btn =
+    "inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold transition active:scale-[0.98]";
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <main className="min-h-screen w-full overflow-x-clip bg-white text-slate-950 antialiased">
-      {/* Floating Pill Navigation */}
-      <header className="sticky top-4 sm:top-6 z-50 px-4 sm:px-6 w-full flex justify-center pointer-events-none animate-in fade-in slide-in-from-top-4 duration-700">
-        <nav className="pointer-events-auto flex h-14 max-w-5xl w-full items-center justify-between px-4 sm:px-6 rounded-full bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
+
+      <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+        <nav aria-label="Main" className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
           <Brand />
-
-          <div className="hidden items-center gap-7 md:flex text-[13px] font-medium text-slate-600">
-            <a href="#features" className="nav-link transition-all duration-200 hover:text-blue-600">Features</a>
-            <a href="#experience" className="nav-link transition-all duration-200 hover:text-blue-600">Experience</a>
-            <Link href="/pricing" className="nav-link transition-all duration-200 hover:text-blue-600">Pricing</Link>
-            <a href="#faq" className="nav-link transition-all duration-200 hover:text-blue-600">FAQs</a>
+          <div className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
+            <a href="#features" className="hover:text-slate-900">Features</a>
+            <a href="#pricing" className="hover:text-slate-900">Pricing</a>
+            <a href="#faq" className="hover:text-slate-900">FAQ</a>
           </div>
-
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {user ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/dashboard"
-                  className="group inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full bg-blue-600 px-3.5 sm:px-5 text-xs sm:text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/30"
-                >
-                  Dashboard <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </Link>
-                <form action={signOut}>
-                  <button
-                    type="submit"
-                    className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 px-3 sm:px-4 text-xs sm:text-[13px] font-semibold text-slate-700 hover:text-rose-600 shadow-2xs transition-all duration-300 active:scale-95 cursor-pointer"
-                  >
-                    <LogOut size={14} className="text-rose-500" />
-                    <span className="hidden sm:inline">Log out</span>
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="hidden text-[13px] font-medium text-slate-600 transition-all duration-200 hover:text-blue-700 sm:inline-flex px-2 py-1"
-                >
-                  Log in
-                </Link>
-
-                <Link
-                  href="/signup"
-                  className="group inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 sm:px-5 text-xs sm:text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/30"
-                >
-                  Get started free <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </Link>
-              </>
+          <div className="flex items-center gap-2">
+            {!signedIn && (
+              <Link href="/login" className="inline-flex h-11 items-center px-3 text-sm font-medium text-slate-700 hover:text-slate-900">
+                Log in
+              </Link>
             )}
+            <Link href={primary} className={`${btn} h-11 bg-blue-600 px-5 text-sm text-white hover:bg-blue-700`}>
+              {primaryLabel}
+            </Link>
           </div>
         </nav>
       </header>
 
-      {/* Hero */}
-      <section className="relative isolate bg-white overflow-hidden">
-        {/* Refined ambient background glow */}
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-[-140px] h-[600px] w-[1000px] -translate-x-1/2 rounded-full bg-gradient-to-br from-blue-100/60 via-sky-50/40 to-transparent blur-[120px]" />
-          <div className="absolute right-[-80px] top-[320px] h-80 w-80 rounded-full bg-gradient-to-l from-blue-50/50 to-transparent blur-[100px]" />
-        </div>
-
-        <div className="mx-auto grid max-w-7xl items-center gap-16 px-5 pb-24 pt-20 sm:px-8 sm:pb-28 sm:pt-24 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16 lg:px-10 lg:pb-32 lg:pt-28">
-          <div className="relative z-10 animate-in fade-in slide-in-from-left-8 duration-1000">
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <Eyebrow>The digital workspace, refined</Eyebrow>
+      <main className={`bg-white text-slate-900 ${signedIn ? "" : "pb-20 md:pb-0"}`}>
+        {/* Hero */}
+        <section className="px-5 pb-20 pt-16 sm:px-8 sm:pt-24">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <h1 className="max-w-2xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+                Forgot which email you used for Vercel?
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 sm:text-xl">
+                TheCore keeps every project&apos;s hosting platforms, login emails, to-dos and encrypted
+                .env files in one place.
+              </p>
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <Link href={primary} className={`${btn} bg-blue-600 text-white hover:bg-blue-700`}>
+                  {primaryLabel} <ArrowRight size={18} aria-hidden />
+                </Link>
+                <a href="#pricing" className={`${btn} border border-slate-300 text-slate-900 hover:bg-slate-50`}>
+                  See pricing
+                </a>
+              </div>
+              <p className="mt-4 text-sm text-slate-500">
+                Free for {PLANS.free.projects} projects. No card needed.
+              </p>
             </div>
+            <SampleDashboard />
+          </div>
+        </section>
 
-            <h1 className="mt-8 max-w-2xl text-[3.5rem] font-semibold leading-[0.95] tracking-[-0.08em] text-slate-950 sm:text-7xl lg:text-[5.5rem] animate-in fade-in slide-in-from-bottom-6 duration-800 fill-mode-backwards" style={{ animationDelay: '150ms' }}>
-              Make space
-              <br />
-              for what
-              <br />
-              <span className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-500 bg-clip-text text-transparent">
-                matters.
-              </span>
-            </h1>
+        {/* Problem */}
+        <section className="bg-slate-50 px-5 py-24 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <h2 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              Six months later, you remember none of it.
+            </h2>
+            <dl className="mt-12 grid gap-x-12 gap-y-8 sm:grid-cols-2">
+              {questions.map(([q, a]) => (
+                <div key={q} className="border-t border-slate-300 pt-5">
+                  <dt className="text-lg font-semibold">{q}</dt>
+                  <dd className="mt-2 text-slate-600">{a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
 
-            <p className="mt-8 max-w-lg text-lg leading-[1.7] text-slate-600 sm:text-xl sm:leading-[1.7] animate-in fade-in slide-in-from-bottom-6 duration-800 fill-mode-backwards" style={{ animationDelay: '300ms' }}>
-              Meet TheCore. A calmer way to bring your projects, resources,
-              and digital essentials together — with less clutter and more
-              clarity.
+        {/* Steps */}
+        <section className="px-5 py-24 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <h2 className="max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              Set up a project in a minute.
+            </h2>
+            <ol className="mt-12 grid gap-6 md:grid-cols-3">
+              {steps.map(([t, d], i) => (
+                <li key={t} className="rounded-3xl border border-slate-200 p-7">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+                    {i + 1}
+                  </span>
+                  <h3 className="mt-5 text-xl font-semibold">{t}</h3>
+                  <p className="mt-2 text-slate-600">{d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section id="features" className="scroll-mt-20 bg-slate-50 px-5 py-24 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <h2 className="max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              Everything a project needs to be found again.
+            </h2>
+            <div className="mt-12 grid gap-5 md:grid-cols-3">
+              {[
+                { icon: Mail, t: "Platforms and login emails", d: "Frontend, backend, database, domain, or a custom type you name. Each with the email you used.", span: "md:col-span-2" },
+                { icon: Lock, t: "Encrypted .env vault", d: "Several files per project, locked with a master password. Auto-locks after 10 minutes.", span: "" },
+                { icon: ListChecks, t: "To-dos per project", d: "Priority and due dates, plus one page for everything.", span: "" },
+                { icon: Users, t: "Accounts view", d: "See which projects and platforms sit under each email.", span: "" },
+                { icon: Search, t: "Search and filters", d: "Find by name, platform, email, status or tech.", span: "" },
+                { icon: Command, t: "Command palette", d: "Press Ctrl or Cmd + K to jump anywhere.", span: "" },
+                { icon: Download, t: "Export and import", d: "Take your data with you as JSON, any time.", span: "" },
+                { icon: Smartphone, t: "Phone, tablet and desktop", d: "Built to be used on any screen.", span: "md:col-span-2" },
+              ].map(({ icon: Icon, t, d, span }) => (
+                <div key={t} className={`rounded-3xl bg-white p-7 ${span}`}>
+                  <Icon size={24} className="text-blue-600" aria-hidden />
+                  <h3 className="mt-4 text-lg font-semibold">{t}</h3>
+                  <p className="mt-2 text-slate-600">{d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Security */}
+        <section className="px-5 py-24 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex items-center gap-3">
+              <ShieldCheck size={28} className="text-blue-600" aria-hidden />
+              <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">What we protect, and what we don&apos;t.</h2>
+            </div>
+            <div className="mt-10 grid gap-5 md:grid-cols-3">
+              <div className="rounded-3xl border border-slate-200 p-7">
+                <h3 className="flex items-center gap-2 text-lg font-semibold"><KeyRound size={20} className="text-blue-600" aria-hidden />Encrypted in your browser</h3>
+                <p className="mt-2 text-slate-600">Your .env files. We cannot read them, and we cannot recover a lost master password.</p>
+              </div>
+              <div className="rounded-3xl border border-slate-200 p-7">
+                <h3 className="text-lg font-semibold">Stored normally</h3>
+                <p className="mt-2 text-slate-600">Project names, platforms, login emails, notes and to-dos, so the app can search and show them.</p>
+              </div>
+              <div className="rounded-3xl border border-slate-200 p-7">
+                <h3 className="text-lg font-semibold">Never stored</h3>
+                <p className="mt-2 text-slate-600">Hosting account passwords, plain-text .env contents and your master password.</p>
+              </div>
+            </div>
+            <p className="mt-6 text-slate-600">
+              Read the full details in the{" "}
+              <Link href="/privacy" className="font-medium text-blue-700 underline underline-offset-2">Privacy Policy</Link> and{" "}
+              <Link href="/terms" className="font-medium text-blue-700 underline underline-offset-2">Terms</Link>.
             </p>
+          </div>
+        </section>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row animate-in fade-in slide-in-from-bottom-6 duration-800 fill-mode-backwards" style={{ animationDelay: '450ms' }}>
-              <Link
-                href="/dashboard"
-                className="group inline-flex h-[52px] items-center justify-center gap-2.5 rounded-full bg-blue-600 px-7 text-[15px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(37,99,235,0.7)] transition-all duration-300 hover:-translate-y-1 hover:bg-blue-700 hover:shadow-[0_16px_40px_-12px_rgba(37,99,235,0.8)] active:scale-[0.98]"
-              >
-                Enter TheCore <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+        <PricingSection signedIn={signedIn} />
+
+        {/* Founder note */}
+        <section className="bg-slate-50 px-5 py-20 sm:px-8">
+          <figure className="mx-auto max-w-2xl">
+            <blockquote className="text-xl leading-9 text-slate-800">
+              I built TheCore because I kept losing track of my own projects: which host they were on, which of
+              my many emails I had used, and what I still had to fix.
+            </blockquote>
+            <figcaption className="mt-4 text-slate-600">{OWNER_NAME}, founder</figcaption>
+          </figure>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="scroll-mt-20 px-5 py-24 sm:px-8">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Questions, answered.</h2>
+            <div className="mt-10 divide-y divide-slate-200 border-y border-slate-200">
+              {faqs.map(([q, a]) => (
+                <details key={q} className="group py-5">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold [&::-webkit-details-marker]:hidden">
+                    {q}
+                    <ChevronDown size={20} className="shrink-0 text-slate-400 transition group-open:rotate-180" aria-hidden />
+                  </summary>
+                  <p className="mt-3 max-w-2xl text-slate-600">
+                    {a}
+                    {q === "Can I get a refund?" && (
+                      <>
+                        {" "}
+                        <Link href="/refund-policy" className="font-medium text-blue-700 underline underline-offset-2">Read the refund policy</Link>.
+                      </>
+                    )}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Final call to action */}
+        <section className="px-5 pb-24 sm:px-8">
+          <div className="mx-auto max-w-6xl rounded-3xl bg-slate-900 px-6 py-16 text-center text-white sm:px-12">
+            <h2 className="mx-auto max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              Stop searching old emails. Start tracking projects.
+            </h2>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link href={primary} className={`${btn} bg-white text-slate-900 hover:bg-slate-100`}>
+                {primaryLabel}
               </Link>
-
-              <a
-                href="#features"
-                className="inline-flex h-[52px] items-center justify-center gap-2.5 rounded-full border-2 border-slate-200 bg-white px-7 text-[15px] font-semibold text-slate-700 transition-all duration-300 hover:border-slate-300 hover:bg-slate-50 hover:-translate-y-0.5 active:scale-[0.98]"
-              >
-                Explore features
+              <a href="#pricing" className={`${btn} border border-white/30 text-white hover:bg-white/10`}>
+                See pricing
               </a>
             </div>
-
-            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-500 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-backwards" style={{ animationDelay: '600ms' }}>
-              <span className="inline-flex items-center gap-2.5">
-                <CheckCircle2 size={16} className="text-blue-600" strokeWidth={2.5} />
-                <span className="font-medium">Thoughtful design</span>
-              </span>
-              <span className="inline-flex items-center gap-2.5">
-                <CheckCircle2 size={16} className="text-blue-600" strokeWidth={2.5} />
-                <span className="font-medium">Free during Early Access</span>
-              </span>
-            </div>
           </div>
+        </section>
+      </main>
 
-          <div className="animate-in fade-in slide-in-from-right-8 duration-1000 fill-mode-backwards" style={{ animationDelay: '200ms' }}>
-            <WorkspacePreview />
-          </div>
-        </div>
-      </section>
-
-      {/* Brand statement */}
-      <section className="border-y border-slate-100 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-5 py-12 text-center sm:px-8 md:flex-row md:text-left lg:px-10">
-          <p className="text-base font-medium tracking-tight text-slate-600 sm:text-lg">
-            A little less digital noise.{" "}
-            <span className="text-slate-900 font-semibold">
-              A lot more room to think.
-            </span>
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm font-medium text-slate-500">
-            <span className="flex items-center gap-2.5">
-              <Layers size={16} className="text-blue-600" strokeWidth={2.5} />
-              <span>Organized</span>
-            </span>
-            <span className="flex items-center gap-2.5">
-              <Zap size={16} className="text-blue-600" strokeWidth={2.5} />
-              <span>Focused</span>
-            </span>
-            <span className="flex items-center gap-2.5">
-              <Smartphone size={16} className="text-blue-600" strokeWidth={2.5} />
-              <span>Responsive</span>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Features - Premium Product Showcase */}
-      <section
-        id="features"
-        className="scroll-mt-24 bg-white px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
-      >
-        <div className="mx-auto max-w-7xl">
-          {/* Section Heading */}
-          <div className="mx-auto max-w-3xl text-center mb-20 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <h2 className="text-5xl sm:text-6xl lg:text-[4rem] font-semibold leading-[1.1] tracking-[-0.06em] text-slate-950 mb-6">
-              Simple on purpose.
-              <br />
-              <span className="text-slate-400">Powerful in practice.</span>
-            </h2>
-
-            <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg leading-8 text-slate-500">
-              Every detail has a purpose. Keep your projects, platforms, tasks, and environment files organized in one considered workspace.
-            </p>
-          </div>
-
-          {/* Feature Showcases - Editorial Layout */}
-          <div className="space-y-20">
-
-            {/* A. Everything Connected - Wide Showcase */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center animate-in fade-in slide-in-from-bottom-8 duration-800 fill-mode-backwards">
-              <div className="order-2 lg:order-1">
-                <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-950 mb-4">
-                  Your projects, all in one place.
-                </h3>
-                <p className="text-lg leading-8 text-slate-500 mb-6">
-                  Track every detail that matters. Repository links, deployment URLs, technology stack, and project status — organized in cards that actually help you work.
-                </p>
-                <ul className="space-y-3 text-slate-600">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Project overview with live status tracking</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Repository and deployment links at your fingertips</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Visual tech stack indicators</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="order-1 lg:order-2">
-                {/* Product Preview - Project Card */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-100/40 to-purple-100/40 rounded-[32px] blur-3xl" />
-                  <div className="relative glass rounded-[28px] p-6 shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all duration-500">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm flex items-center justify-center font-bold text-lg text-white">
-                          TC
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg text-slate-950">TheCore Platform</h4>
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 mt-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            Deployed
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-slate-500 mb-6 min-h-[40px]">
-                      Developer project vault with encrypted environment management and platform tracking.
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-2 mb-6">
-                      <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700">Next.js</div>
-                      <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700">Supabase</div>
-                      <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700">Vercel</div>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs text-slate-400">
-                      <span className="flex items-center gap-1.5">
-                        <Globe size={14} />
-                        thecore.indevs.in
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock size={14} />
-                        Updated 2 days ago
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* B. Faster Workflow - Medium Showcase */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center animate-in fade-in slide-in-from-bottom-8 duration-800 fill-mode-backwards" style={{ animationDelay: '100ms' }}>
-              <div>
-                {/* Product Preview - Task List */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/40 to-teal-100/40 rounded-[32px] blur-3xl" />
-                  <div className="relative glass rounded-[28px] p-6 shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all duration-500">
-                    <h4 className="text-lg font-bold text-slate-950 mb-4">To-do list</h4>
-
-                    <div className="space-y-3">
-                      {[
-                        { text: 'Update API documentation', done: true, priority: 'med' },
-                        { text: 'Fix authentication flow', done: false, priority: 'high' },
-                        { text: 'Deploy staging environment', done: false, priority: 'med' },
-                      ].map((todo, i) => (
-                        <div key={i} className="flex items-center gap-3 p-3 bg-white/80 hover:bg-white border border-slate-200 rounded-2xl transition-all">
-                          <div className={`w-[22px] h-[22px] rounded-lg border-2 flex items-center justify-center transition-all ${
-                            todo.done
-                              ? 'bg-blue-600 border-blue-600 text-white'
-                              : 'bg-white border-slate-300'
-                          }`}>
-                            {todo.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                          </div>
-                          <span className={`text-sm flex-1 ${
-                            todo.done ? 'text-slate-400 line-through' : 'text-slate-900 font-medium'
-                          }`}>
-                            {todo.text}
-                          </span>
-                          {todo.priority === 'high' && !todo.done && (
-                            <span className="px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-[10px] font-bold text-red-700 uppercase">High</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                      <button className="w-full py-2.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700 transition-colors flex items-center justify-center gap-2">
-                        <Plus size={16} />
-                        Add task
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-950 mb-4">
-                  Less searching. More building.
-                </h3>
-                <p className="text-lg leading-8 text-slate-500 mb-6">
-                  Keep your workflow focused with task management built into every project. Track progress, set priorities, and stay organized without switching tools.
-                </p>
-                <ul className="space-y-3 text-slate-600">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Project-specific task lists</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Priority levels and due dates</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Quick add without context switching</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* C. Environment Organized - Wide Showcase */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center animate-in fade-in slide-in-from-bottom-8 duration-800 fill-mode-backwards" style={{ animationDelay: '200ms' }}>
-              <div className="order-2 lg:order-1">
-                <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-950 mb-4">
-                  Keep every environment in order.
-                </h3>
-                <p className="text-lg leading-8 text-slate-500 mb-6">
-                  Zero-knowledge encrypted vault for your environment variables. Manage .env, .env.local, and .env.prod files with client-side AES-256-GCM encryption.
-                </p>
-                <ul className="space-y-3 text-slate-600">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>AES-256-GCM client-side encryption</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Multiple environment configurations</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-blue-600" />
-                    <span>Secure key derivation with PBKDF2</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="order-1 lg:order-2">
-                {/* Product Preview - Environment Vault */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/40 to-blue-100/40 rounded-[32px] blur-3xl" />
-                  <div className="relative glass rounded-[28px] p-6 shadow-xl border border-slate-200/80 hover:shadow-2xl transition-all duration-500">
-                    <div className="flex items-center justify-between mb-5">
-                      <h4 className="text-lg font-bold text-slate-950">Environment Vault</h4>
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <LockKeyhole size={12} />
-                        Encrypted
-                      </span>
-                    </div>
-
-                    <div className="space-y-3 mb-4">
-                      {[
-                        { name: '.env', vars: 8, color: 'blue' },
-                        { name: '.env.local', vars: 12, color: 'purple' },
-                        { name: '.env.prod', vars: 15, color: 'emerald' },
-                      ].map((env, i) => (
-                        <div key={i} className="p-4 bg-white/80 border border-slate-200 rounded-2xl hover:border-slate-300 transition-all">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                env.color === 'blue' ? 'bg-blue-500' :
-                                env.color === 'purple' ? 'bg-purple-500' :
-                                'bg-emerald-500'
-                              }`} />
-                              <span className="font-mono text-sm font-semibold text-slate-900">{env.name}</span>
-                            </div>
-                            <span className="text-xs text-slate-500">{env.vars} variables</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <Database size={12} />
-                            <span>Last synced 5 min ago</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-slate-500 pt-3 border-t border-slate-100">
-                      <Shield size={14} className="text-emerald-600" />
-                      <span>Zero-knowledge architecture • Keys never leave your device</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* D. Platforms Without Clutter - Compact Showcase */}
-            <div className="max-w-4xl mx-auto text-center animate-in fade-in slide-in-from-bottom-8 duration-800 fill-mode-backwards" style={{ animationDelay: '300ms' }}>
-              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-950 mb-4">
-                Your tools. One workspace.
-              </h3>
-              <p className="text-lg leading-8 text-slate-500 mb-8 max-w-2xl mx-auto">
-                Connect your platforms, databases, and hosting services. Keep account details, API endpoints, and deployment info organized per project.
-              </p>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto">
-                {[
-                  { name: 'Vercel', icon: '▲' },
-                  { name: 'Supabase', icon: 'S' },
-                  { name: 'GitHub', icon: 'GH' },
-                  { name: 'Railway', icon: 'R' },
-                ].map((platform, i) => (
-                  <div key={i} className="glass rounded-2xl p-6 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
-                    <div className="text-2xl font-bold text-slate-900 mb-2">{platform.icon}</div>
-                    <div className="text-sm font-medium text-slate-600">{platform.name}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Overview */}
-      <section
-        id="pricing"
-        className="scroll-mt-24 border-y border-slate-100 bg-slate-50/60 px-5 py-24 sm:px-8 sm:py-28 lg:px-10"
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto max-w-2xl text-center animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <Eyebrow>Simple, transparent pricing</Eyebrow>
-
-            <h2 className="mt-6 text-4xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-6xl">
-              Start free.
-              <br />
-              <span className="text-blue-600">Upgrade when ready.</span>
-            </h2>
-
-            <p className="mx-auto mt-5 max-w-xl text-base leading-8 text-slate-500">
-              Begin with the Free plan. Unlock unlimited projects with Pro starting at ₹99/month or ₹999/year.
-            </p>
-          </div>
-
-          <div className="mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl animate-in fade-in slide-in-from-bottom-8 duration-800 fill-mode-backwards" style={{ animationDelay: '200ms' }}>
-
-            {/* Free Plan Card */}
-            <div className="rounded-[28px] border border-[#DCE9E3] bg-white p-7 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-              <div className="mb-5">
-                <h3 className="text-xl font-bold text-[#172B2A] mb-2">Free</h3>
-                <p className="text-xs text-[#647570] leading-relaxed">
-                  Perfect for getting started
-                </p>
-              </div>
-
-              <div className="mb-5">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-[#172B2A]">₹0</span>
-                  <span className="text-sm text-[#647570]">/forever</span>
-                </div>
-              </div>
-
-              <ul className="space-y-2.5 mb-6 text-sm text-[#172B2A]">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                  <span>Up to 3 projects</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                  <span>AES-256-GCM encryption</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                  <span>Full data export</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Pro Annual Card - Featured */}
-            <div className="rounded-[28px] bg-[#5B72E6] p-7 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 md:scale-[1.05] relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold uppercase bg-white text-[#5B72E6] shadow-sm whitespace-nowrap">
-                Best Value
-              </div>
-
-              <div className="mb-5 mt-2">
-                <h3 className="text-xl font-bold text-white mb-2">Pro Annual</h3>
-                <p className="text-xs text-white/80 leading-relaxed">
-                  Save 16% with yearly billing
-                </p>
-              </div>
-
-              <div className="mb-5">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">₹999</span>
-                  <span className="text-sm text-white/70">/year</span>
-                </div>
-                <p className="text-xs text-white/60 mt-1">~₹83/month</p>
-              </div>
-
-              <ul className="space-y-2.5 mb-6 text-sm text-white">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-white" />
-                  <span>Unlimited projects</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-white" />
-                  <span>Priority support</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-white" />
-                  <span>All Free features</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Pro Monthly Card */}
-            <div className="rounded-[28px] border border-[#DCE9E3] bg-white p-7 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-              <div className="mb-5">
-                <h3 className="text-xl font-bold text-[#172B2A] mb-2">Pro Monthly</h3>
-                <p className="text-xs text-[#647570] leading-relaxed">
-                  Flexible monthly billing
-                </p>
-              </div>
-
-              <div className="mb-5">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-[#172B2A]">₹99</span>
-                  <span className="text-sm text-[#647570]">/month</span>
-                </div>
-              </div>
-
-              <ul className="space-y-2.5 mb-6 text-sm text-[#172B2A]">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                  <span>Unlimited projects</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                  <span>Priority support</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                  <span>Cancel anytime</span>
-                </li>
-              </ul>
-            </div>
-
-          </div>
-
-          <div className="text-center mt-10">
-            <Link
-              href="/pricing"
-              className="group inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              View detailed pricing and features
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Workflow */}
-      <section
-        id="experience"
-        className="scroll-mt-24 border-b border-slate-100 bg-white px-5 py-24 sm:px-8 sm:py-28 lg:px-10"
-      >
-        <div className="mx-auto grid max-w-7xl items-start gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:gap-24">
-          <div className="lg:sticky lg:top-32 animate-in fade-in slide-in-from-left-6 duration-800">
-            <Eyebrow>A more natural workflow</Eyebrow>
-
-            <h2 className="mt-6 text-4xl font-semibold leading-tight tracking-[-0.06em] text-slate-950 sm:text-5xl">
-              Your space.
-              <br />
-              Your rhythm.
-            </h2>
-
-            <p className="mt-5 max-w-md text-base leading-8 text-slate-500">
-              Great tools should feel natural. TheCore is designed around a
-              simple idea: the less time you spend managing your space, the
-              more time you have to use it.
-            </p>
-
-            <div className="mt-8 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-                <Command size={21} className="text-blue-600" />
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Meet TheCore
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Your digital space, refined.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {steps.map(({ number, title, description, icon: Icon }, index) => (
-              <article
-                key={number}
-                className="group rounded-[26px] border border-slate-200/80 bg-white p-6 transition-all duration-300 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-950/[0.035] hover:-translate-y-0.5 sm:p-8 animate-in fade-in slide-in-from-right-6 duration-700 fill-mode-backwards"
-                style={{ animationDelay: `${index * 150}ms` }}
-              >
-                <div className="flex items-start gap-5 sm:gap-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:scale-110">
-                    <Icon size={21} strokeWidth={1.8} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-3 text-[10px] font-semibold tracking-[0.18em] text-slate-400">
-                      STEP {number}
-                    </div>
-
-                    <h3 className="text-xl font-semibold tracking-tight text-slate-950">
-                      {title}
-                    </h3>
-
-                    <p className="mt-3 text-sm leading-7 text-slate-500">
-                      {description}
-                    </p>
-                  </div>
-
-                  <ArrowUpRight
-                    size={18}
-                    className="shrink-0 text-slate-300 transition-all duration-300 group-hover:text-blue-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Policies */}
-      <section className="bg-white px-5 py-24 sm:px-8 sm:py-28 lg:px-10">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 rounded-[32px] border border-slate-200/80 bg-white p-7 sm:p-10 lg:grid-cols-2 lg:gap-20 lg:p-14 transition-all duration-500 hover:shadow-xl hover:shadow-slate-950/5 animate-in fade-in slide-in-from-bottom-8 duration-800">
+      <footer className="border-t border-slate-200 bg-white px-5 py-12 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 sm:flex-row sm:justify-between">
           <div>
-            <Eyebrow>Clarity matters</Eyebrow>
-
-            <h2 className="mt-6 text-4xl font-semibold leading-tight tracking-[-0.06em] text-slate-950 sm:text-5xl">
-              Trust begins
-              <br />
-              with <span className="text-blue-600">transparency.</span>
-            </h2>
-
-            <p className="mt-5 max-w-lg text-base leading-8 text-slate-500">
-              Find the policies behind your experience and understand the
-              information published by your application.
-            </p>
-
-            <Link
-              href="/privacy"
-              className="group mt-8 inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:-translate-y-0.5"
-            >
-              Read privacy policy <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </Link>
+            <Brand compact />
+            <p className="mt-3 max-w-xs text-sm text-slate-600">Know where every project lives.</p>
           </div>
-
-          <div className="relative overflow-hidden rounded-[26px] bg-slate-50 p-6 sm:p-8">
-            <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-blue-100/80 blur-3xl" />
-
-            <div className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-                  <Fingerprint size={22} />
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-950">
-                    Information, made accessible
-                  </h3>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Important details, clearly presented
-                  </p>
-                </div>
-              </div>
-
-              <div className="my-5 h-px bg-slate-100" />
-
-              {[
-                {
-                  icon: LockKeyhole,
-                  title: "Privacy policy",
-                  description: "Data collection and handling",
-                  href: "/privacy",
-                },
-                {
-                  icon: FileText,
-                  title: "Terms of service",
-                  description: "Using the platform",
-                  href: "/terms",
-                },
-                {
-                  icon: Globe,
-                  title: "Cookie policy",
-                  description: "Cookies and preferences",
-                  href: "/cookies",
-                },
-              ].map(({ icon: Icon, title, description, href }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="group flex items-center gap-3 rounded-xl px-2 py-3 transition hover:bg-slate-50"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-600">
-                    <Icon size={17} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-800">
-                      {title}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {description}
-                    </p>
-                  </div>
-
-                  <ArrowUpRight
-                    size={16}
-                    className="text-slate-400 transition group-hover:text-blue-600"
-                  />
-                </Link>
-              ))}
-
-              <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50/80 px-3.5 py-3 text-xs leading-5 text-blue-800">
-                <CheckCircle2 size={16} className="shrink-0" />
-                Clear information, whenever you need it.
-              </div>
-            </div>
-          </div>
+          <nav aria-label="Footer" className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm text-slate-600">
+            <Link href="/privacy" className="hover:text-slate-900">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-slate-900">Terms of Service</Link>
+            <Link href="/refund-policy" className="hover:text-slate-900">Refund Policy</Link>
+            <Link href="/contact" className="hover:text-slate-900">Contact</Link>
+            <Link href="/cookies" className="hover:text-slate-900">Cookies</Link>
+            <Link href="/pricing" className="hover:text-slate-900">Pricing</Link>
+          </nav>
         </div>
-      </section>
-
-      {/* FAQs */}
-      <section
-        id="faq"
-        className="scroll-mt-24 border-t border-slate-100 bg-slate-50/60 px-5 py-24 sm:px-8 sm:py-28 lg:px-10"
-      >
-        <div className="mx-auto max-w-3xl">
-          <div className="text-center">
-            <Eyebrow>A few useful answers</Eyebrow>
-
-            <h2 className="mt-6 text-4xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-5xl">
-              Good to know.
-            </h2>
-
-            <p className="mt-4 text-sm leading-7 text-slate-500 sm:text-base">
-              The essentials, without unnecessary complexity.
-            </p>
-          </div>
-
-          <div className="mt-10 space-y-3">
-            {faqs.map(({ question, answer }) => (
-              <details
-                key={question}
-                className="group rounded-2xl border border-slate-200/80 bg-white px-5 py-5 transition open:border-blue-200 sm:px-6"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden sm:text-base">
-                  {question}
-                  <ChevronDown
-                    size={18}
-                    className="shrink-0 text-slate-400 transition-transform duration-200 group-open:rotate-180"
-                  />
-                </summary>
-
-                <p className="max-w-2xl pt-4 text-sm leading-7 text-slate-500">
-                  {answer}
-                </p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="bg-white px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
-        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[32px] bg-blue-600 px-6 py-16 text-center sm:px-12 sm:py-20">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -left-20 -top-32 h-80 w-80 rounded-full border border-white/10" />
-            <div className="absolute -left-8 -top-20 h-56 w-56 rounded-full border border-white/10" />
-            <div className="absolute -bottom-40 -right-16 h-96 w-96 rounded-full border border-white/10" />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-transparent to-blue-950/20" />
-          </div>
-
-          <div className="relative mx-auto max-w-3xl">
-            <div className="mx-auto inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 py-2.5 shadow-lg">
-              <Brand inverse size="md" href="" />
-            </div>
-
-            <h2 className="mt-7 text-4xl font-semibold leading-tight tracking-[-0.06em] text-white sm:text-6xl">
-              Find your focus.
-              <br />
-              Start at TheCore.
-            </h2>
-
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-blue-100 sm:text-base sm:leading-8">
-              A more thoughtful digital workspace starts with a single step.
-            </p>
-
-            <Link
-              href="/dashboard"
-              className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-50"
-            >
-              Enter TheCore <ArrowRight size={17} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
-          <div className="flex flex-col justify-between gap-9 sm:flex-row sm:items-start">
-            <div className="max-w-sm">
-              <Brand compact />
-              <p className="mt-4 max-w-xs text-sm leading-7 text-slate-500">
-                A little more clarity for your digital life.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-12 gap-y-8 sm:gap-x-16">
-              <div>
-                <h3 className="text-xs font-semibold tracking-wide text-slate-900">
-                  EXPLORE
-                </h3>
-                <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500">
-                  <a href="#features" className="nav-link">Features</a>
-                  <a href="#experience" className="nav-link">Experience</a>
-                  <Link href="/pricing" className="nav-link">Pricing & Plans</Link>
-                  <Link href="/login" className="nav-link">Sign in</Link>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-xs font-semibold tracking-wide text-slate-900">
-                  INFORMATION
-                </h3>
-                <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500">
-                  <Link href="/privacy" className="nav-link">Privacy Policy</Link>
-                  <Link href="/terms" className="nav-link">Terms of Service</Link>
-                  <Link href="/refund-policy" className="nav-link">Refund Policy</Link>
-                  <Link href="/contact" className="nav-link">Contact Us</Link>
-                  <Link href="/cookies" className="nav-link">Cookies</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 pt-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-            <p>© {new Date().getFullYear()} TheCore. All rights reserved.</p>
-            <p>Designed with intention.</p>
-          </div>
-        </div>
+        <p className="mx-auto mt-10 max-w-6xl text-sm text-slate-500">
+          © {new Date().getFullYear()} TheCore. Built by {OWNER_NAME}.
+        </p>
       </footer>
-    </main>
+
+      {!signedIn && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:hidden">
+          <Link href="/signup" className={`${btn} w-full bg-blue-600 text-white hover:bg-blue-700`}>
+            Start free
+          </Link>
+        </div>
+      )}
     </>
   );
 }
