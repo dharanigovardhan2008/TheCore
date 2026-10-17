@@ -62,6 +62,8 @@ export default function AuthForm({ initialMode }: { initialMode: "login" | "sign
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
 
   const isSignup = mode === "signup" || mode === "complete_google_signup";
   const plan = params.get("plan") === "pro" ? "pro" : null;
@@ -136,7 +138,7 @@ export default function AuthForm({ initialMode }: { initialMode: "login" | "sign
         if (err) {
           setError(
             /confirm/i.test(err.message)
-              ? "Please confirm your email first. Check your inbox for the link."
+              ? "Please confirm your email first. Sign up again to get a new code."
               : "Incorrect email or password.",
           );
           return;
@@ -198,6 +200,17 @@ export default function AuthForm({ initialMode }: { initialMode: "login" | "sign
     }
   }
 
+  async function verifyCode(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setVerifying(true);
+    const { data, error: err } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "signup" });
+    setVerifying(false);
+    if (err || !data.user) return setError("That code is invalid or has expired. Request a new one.");
+    await saveProfile(data.user.id);
+    finish();
+  }
+
   async function resend() {
     setCooldown(30);
     await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: callback() } });
@@ -214,8 +227,16 @@ export default function AuthForm({ initialMode }: { initialMode: "login" | "sign
           <div className="mb-4 flex justify-center"><Brand size="lg" /></div>
           <h1 className="text-2xl font-bold text-content">Check your email</h1>
           <p className="mt-2 text-sm text-content-secondary">
-            We sent a confirmation link to <span className="font-medium text-content">{email}</span>. Open it to finish creating your account.
+            We sent a 6-digit code to <span className="font-medium text-content">{email}</span>. Enter it to finish creating your account.
           </p>
+          <form onSubmit={verifyCode} className="mt-6">
+            <input inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} required aria-label="6-digit code" value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={`${field} text-center text-xl tracking-[0.5em]`} />
+            {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+            <button disabled={verifying || code.length !== 6} className="mt-4 min-h-11 w-full rounded-full bg-blue-600 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60">
+              {verifying ? "Verifying…" : "Verify and continue"}
+            </button>
+          </form>
           <div className="mt-6 flex flex-col gap-3">
             <button
               type="button"
@@ -223,7 +244,7 @@ export default function AuthForm({ initialMode }: { initialMode: "login" | "sign
               disabled={cooldown > 0}
               className="min-h-11 rounded-full border border-[var(--border-light)] bg-white font-medium text-content transition hover:bg-slate-50 disabled:opacity-50"
             >
-              {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend email"}
+              {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
             </button>
             <button
               type="button"

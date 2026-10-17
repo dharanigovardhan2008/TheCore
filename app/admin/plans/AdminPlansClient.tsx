@@ -63,6 +63,8 @@ export default function AdminPlansClient({ initialPlans }: AdminPlansClientProps
         description: plan.description,
         price_month_rupees: Number(plan.price_month_rupees) || 0,
         price_year_rupees: Number(plan.price_year_rupees) || 0,
+        price_month_usd: Number(plan.price_month_usd) || 0,
+        price_year_usd: Number(plan.price_year_usd) || 0,
         discount_percent: Number(plan.discount_percent) || 0,
         discount_label: plan.discount_label || '',
         max_projects: plan.max_projects === null || plan.max_projects === undefined || (plan.max_projects as any) === '' ? null : Number(plan.max_projects),
@@ -290,6 +292,18 @@ export default function AdminPlansClient({ initialPlans }: AdminPlansClientProps
                           className="w-full pl-6 pr-2 py-1.5 text-xs font-bold rounded-lg border border-[#DCE9E3] bg-white outline-none focus:border-blue-500 disabled:opacity-60 text-[#172B2A]"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#172B2A] mb-1">Monthly ($ USD)</label>
+                      <input type="number" step="0.01" disabled={isFree} value={p.price_month_usd ?? 0}
+                        onChange={(e) => handleFieldChange(p.id, 'price_month_usd', Number(e.target.value))}
+                        className="w-full px-2 py-1.5 text-xs font-bold rounded-lg border border-[#DCE9E3] bg-white outline-none focus:border-blue-500 disabled:opacity-60 text-[#172B2A]" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#172B2A] mb-1">Yearly ($ USD)</label>
+                      <input type="number" step="0.01" disabled={isFree} value={p.price_year_usd ?? 0}
+                        onChange={(e) => handleFieldChange(p.id, 'price_year_usd', Number(e.target.value))}
+                        className="w-full px-2 py-1.5 text-xs font-bold rounded-lg border border-[#DCE9E3] bg-white outline-none focus:border-blue-500 disabled:opacity-60 text-[#172B2A]" />
                     </div>
                   </div>
 
@@ -569,4 +583,3 @@ export default function AdminPlansClient({ initialPlans }: AdminPlansClientProps
     </div>
   );
 }
-

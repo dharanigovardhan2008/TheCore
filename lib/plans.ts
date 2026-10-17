@@ -86,6 +86,8 @@ export interface PlanConfigRecord {
   description: string;
   price_month_rupees: number;
   price_year_rupees: number;
+  price_month_usd?: number;
+  price_year_usd?: number;
   discount_percent: number;
   discount_label?: string | null;
   max_projects: number | null;
@@ -188,4 +190,3 @@ export function calculateNewExpiry(
   }
   return result;
 }
-

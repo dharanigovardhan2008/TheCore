@@ -430,6 +430,8 @@ export async function updatePlanConfig(
     description?: string;
     price_month_rupees?: number;
     price_year_rupees?: number;
+    price_month_usd?: number;
+    price_year_usd?: number;
     discount_percent?: number;
     discount_label?: string | null;
     max_projects?: number | null;
@@ -474,6 +476,8 @@ export async function createPlanConfig(planData: {
   description?: string;
   price_month_rupees: number;
   price_year_rupees: number;
+  price_month_usd?: number;
+  price_year_usd?: number;
   discount_percent?: number;
   discount_label?: string | null;
   max_projects?: number | null;
@@ -496,6 +500,8 @@ export async function createPlanConfig(planData: {
       description: planData.description || '',
       price_month_rupees: planData.price_month_rupees,
       price_year_rupees: planData.price_year_rupees,
+      price_month_usd: planData.price_month_usd ?? 0,
+      price_year_usd: planData.price_year_usd ?? 0,
       discount_percent: planData.discount_percent || 0,
       discount_label: planData.discount_label || '',
       max_projects: planData.max_projects ?? null,
@@ -544,4 +550,3 @@ export async function togglePlanActive(planId: string, isActive: boolean) {
 
   return { success: true };
 }
-
