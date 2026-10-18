@@ -8,6 +8,7 @@ import { PLANS, BillingCycle } from '@/lib/plans';
 import { createCheckoutSession } from '@/app/dashboard/actions';
 import PaymentStatusModal from '@/components/ui/PaymentStatusModal';
 import PricingCard from '@/components/ui/PricingCard';
+import PhoneInputSheet from '@/app/components/ui/PhoneInputSheet';
 
 interface CashfreeSDKInstance {
   checkout: (opts: {
@@ -42,6 +43,8 @@ export default function PricingClient({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [paymentModalState, setPaymentModalState] = useState<'success' | 'failed' | null>(null);
   const [paymentModalError, setPaymentModalError] = useState<string | null>(null);
+  const [phoneSheetOpen, setPhoneSheetOpen] = useState(false);
+  const [pendingCycle, setPendingCycle] = useState<BillingCycle | null>(null);
 
   const freePlan = PLANS.free;
   const proPlan = PLANS.pro;
@@ -63,7 +66,21 @@ export default function PricingClient({
       setErrorMsg(null);
       setPaymentModalError(null);
 
-      const session = await createCheckoutSession(cycle);
+      const sessionResult = await createCheckoutSession(cycle);
+      if (!sessionResult.ok) {
+        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
+          setPendingCycle(cycle);
+          setPhoneSheetOpen(true);
+          return;
+        }
+        setErrorMsg(sessionResult.message);
+        setPaymentModalError(sessionResult.message);
+        setPaymentModalState('failed');
+        setLoadingCycle(null);
+        return;
+      }
+      // At this point, sessionResult is guaranteed to be the success type
+      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
 
       const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
         const win = window as unknown as CashfreeWindow;
@@ -118,6 +135,91 @@ export default function PricingClient({
     }
   };
 
+  const handlePhoneContinue = async (phone: string) => {
+    if (!pendingCycle) return;
+    try {
+      setLoadingCycle(pendingCycle);
+      const sessionResult = await createCheckoutSession(pendingCycle, { phone });
+      if (!sessionResult.ok) {
+        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
+          // This shouldn't happen because we validated, but just in case.
+          setErrorMsg(sessionResult.message);
+          setPaymentModalError(sessionResult.message);
+          setPaymentModalState('failed');
+          setLoadingCycle(null);
+          return;
+        }
+        setErrorMsg(sessionResult.message);
+        setPaymentModalError(sessionResult.message);
+        setPaymentModalState('failed');
+        setLoadingCycle(null);
+        return;
+      }
+      // At this point, sessionResult is guaranteed to be the success type
+      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
+
+      const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
+        const win = window as unknown as CashfreeWindow;
+        if (win.Cashfree) {
+          return win.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' });
+        }
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+          script.onload = () => {
+            const loadedWin = window as unknown as CashfreeWindow;
+            if (loadedWin.Cashfree) {
+              resolve(loadedWin.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' }));
+            } else {
+              reject(new Error('Cashfree SDK failed to initialize'));
+            }
+          };
+          script.onerror = () => reject(new Error('Failed to load Cashfree checkout script'));
+          document.head.appendChild(script);
+        });
+      };
+
+      try {
+        const cashfree = await loadCashfreeSdk();
+        const checkoutResult = await cashfree.checkout({
+          paymentSessionId: session.paymentSessionId,
+          redirectTarget: '_self',
+          returnUrl: session.returnUrl,
+        });
+
+        if (checkoutResult?.error) {
+          console.warn('[Cashfree Checkout SDK Error]:', checkoutResult.error);
+          const msg = checkoutResult.error.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+          setErrorMsg(msg);
+          setPaymentModalError(msg);
+          setPaymentModalState('failed');
+          setLoadingCycle(null);
+          setPhoneSheetOpen(false);
+          setPendingCycle(null);
+          return;
+        }
+      } catch (sdkErr: unknown) {
+        console.warn('Direct Cashfree SDK checkout warning:', (sdkErr as Error)?.message);
+        router.push(`/billing/return?order_id=${session.orderId}`);
+      }
+    } catch (err: unknown) {
+      console.error('Upgrade error:', err);
+      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+      setErrorMsg(msg);
+      setPaymentModalError(msg);
+      setPaymentModalState('failed');
+    } finally {
+      setLoadingCycle(null);
+      setPhoneSheetOpen(false);
+      setPendingCycle(null);
+    }
+  };
+
+  const handlePhoneCancel = () => {
+    setPhoneSheetOpen(false);
+    setPendingCycle(null);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-content)] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -163,6 +265,15 @@ export default function PricingClient({
           <div className="max-w-md mx-auto mb-8 p-4 rounded-[20px] bg-red-50 border border-red-200 text-red-700 text-sm text-center font-medium animate-in fade-in slide-in-from-top-2 duration-300">
             {errorMsg}
           </div>
+        )}
+
+        {phoneSheetOpen && (
+          <PhoneInputSheet
+            isOpen={phoneSheetOpen}
+            onOpenChange={setPhoneSheetOpen}
+            onContinue={handlePhoneContinue}
+            onCancel={handlePhoneCancel}
+          />
         )}
 
         {/* Three-Card Pricing Grid */}

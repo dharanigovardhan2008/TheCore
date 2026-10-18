@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { verifyOrderReturn } from '@/app/dashboard/actions';
+import { verifyOrderReturn, verifyPolarOrderReturn, getOrderById } from '@/app/dashboard/actions';
 import PaymentStatusModal, { type PaymentModalStatus } from '@/components/ui/PaymentStatusModal';
 
 import type { Order } from '@/lib/types';
@@ -25,7 +25,24 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
     try {
       setStatus('loading');
       setErrorMessage(null);
-      const res = await verifyOrderReturn(orderId);
+
+      // First, get the order details to determine which payment provider to use
+      const order = await getOrderById(orderId);
+      if (!order) {
+        setStatus('failed');
+        setErrorMessage('Order not found in database. If you completed payment, please check your Billing page or contact support.');
+        return;
+      }
+
+      // Determine which verification function to use based on currency
+      let res;
+      if (order.currency === 'USD') {
+        // Polar verification
+        res = await verifyPolarOrderReturn(orderId);
+      } else {
+        // Cashfree verification (default for INR and other currencies)
+        res = await verifyOrderReturn(orderId);
+      }
 
       if (res.orderStatus === 'paid') {
         setStatus('success');

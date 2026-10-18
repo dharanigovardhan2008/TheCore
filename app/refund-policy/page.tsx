@@ -57,7 +57,7 @@ export default function RefundPolicyPage() {
               <div className="p-4 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
                 <h3 className="text-base font-semibold mb-1">Annual Subscriptions (12 Months)</h3>
                 <p className="text-sm text-[var(--text-content-secondary)]">
-                  We offer a <strong>7-day refund window</strong> from the date of initial purchase for 12-month plans. If you are not satisfied with TheCore Pro within 7 days of payment, you may contact support for a full refund minus any payment gateway processing charges.
+                  Refund eligibility is subject to TheCore's Refund & Cancellation Policy. Please contact support for refund inquiries.
                 </p>
               </div>
 
@@ -76,7 +76,7 @@ export default function RefundPolicyPage() {
               To request a refund or report a billing dispute:
             </p>
             <ol className="list-decimal pl-5 text-sm text-[var(--text-content-secondary)] space-y-2 mb-4">
-              <li>Send an email to <a href="mailto:billing@thecore.indevs.in" className="text-blue-500 hover:underline">billing@thecore.indevs.in</a> or submit an inquiry through our <Link href="/contact" className="text-blue-500 hover:underline">Contact page</Link>.</li>
+              <li>Send an email to <a href="mailto:support@opsyl.in" className="text-blue-500 hover:underline">support@opsyl.in</a> or submit an inquiry through our <Link href="/contact" className="text-blue-500 hover:underline">Contact page</Link>.</li>
               <li>Include your registered email address and the Cashfree Order ID or transaction reference number.</li>
               <li>State the reason for your refund request.</li>
             </ol>
@@ -89,7 +89,7 @@ export default function RefundPolicyPage() {
             <h2 className="text-xl font-semibold mb-3">5. Contact Information</h2>
             <p className="text-sm leading-relaxed text-[var(--text-content-secondary)]">
               For questions regarding this policy, please reach us at{' '}
-              <a href="mailto:support@thecore.indevs.in" className="text-blue-500 hover:underline">support@thecore.indevs.in</a> or visit our{' '}
+              <a href="mailto:support@opsyl.in" className="text-blue-500 hover:underline">support@opsyl.in</a> or visit our{' '}
               <Link href="/contact" className="text-blue-500 hover:underline">Contact page</Link>.
             </p>
           </section>

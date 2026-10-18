@@ -15,6 +15,7 @@ export interface Profile {
   plan_expires_at?: string | null;
   role?: 'user' | 'admin' | string | null;
   is_disabled?: boolean | null;
+  polar_customer_id?: string | null;
   created_at: string;
 }
 
@@ -28,6 +29,8 @@ export interface Order {
   cf_order_id: string;
   cf_payment_session_id?: string | null;
   status: 'created' | 'paid' | 'failed' | 'expired';
+  provider_order_id?: string | null;
+  provider_subscription_id?: string | null;
   created_at: string;
   paid_at?: string | null;
   receipt_url?: string | null;

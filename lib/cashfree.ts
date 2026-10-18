@@ -63,14 +63,12 @@ function getCredentials() {
   const secretKey = process.env.CASHFREE_SECRET_KEY;
 
   if (!appId || !secretKey) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Cashfree credentials (CASHFREE_APP_ID, CASHFREE_SECRET_KEY) are missing.');
-    }
+    throw new Error('Cashfree credentials (CASHFREE_APP_ID, CASHFREE_SECRET_KEY) are missing.');
   }
 
   return {
-    appId: appId || 'mock-cashfree-app-id',
-    secretKey: secretKey || 'mock-cashfree-secret-key',
+    appId: appId,
+    secretKey: secretKey,
   };
 }
 
@@ -82,10 +80,11 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
   const { appId, secretKey } = getCredentials();
   const baseUrl = getCashfreeBaseUrl();
 
-  // Cashfree requires a valid customer phone (10 digits). Default to standard valid test number if absent.
-  const phone = params.customerPhone && /^\d{10}$/.test(params.customerPhone)
-    ? params.customerPhone
-    : '9876543210';
+  // Cashfree requires a valid customer phone (10 digits). Must be provided.
+  if (!params.customerPhone || !/^\d{10}$/.test(params.customerPhone)) {
+    throw new Error('Valid 10-digit customer phone number is required');
+  }
+  const phone = params.customerPhone;
 
   const body = {
     order_id: params.orderId,
@@ -102,19 +101,6 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
     },
     order_note: params.orderNote || 'TheCore Subscription',
   };
-
-  // If in dev and dummy credentials, return a mock response for seamless local testing
-  if (appId === 'mock-cashfree-app-id') {
-    return {
-      cf_order_id: `cf_${Date.now()}`,
-      order_id: params.orderId,
-      order_amount: body.order_amount,
-      order_currency: 'INR',
-      payment_session_id: `session_mock_${Date.now()}`,
-      order_status: 'ACTIVE',
-      entity: 'order',
-    };
-  }
 
   const response = await fetch(`${baseUrl}/orders`, {
     method: 'POST',
@@ -157,15 +143,6 @@ export async function fetchCashfreeOrder(orderId: string): Promise<CashfreeFetch
   const { appId, secretKey } = getCredentials();
   const baseUrl = getCashfreeBaseUrl();
 
-  if (appId === 'mock-cashfree-app-id') {
-    return {
-      cf_order_id: `cf_${orderId}`,
-      order_id: orderId,
-      order_amount: 99,
-      order_currency: 'INR',
-      order_status: 'PAID',
-    };
-  }
 
   const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, {
     method: 'GET',

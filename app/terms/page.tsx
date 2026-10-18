@@ -487,6 +487,7 @@ export default function TermsPage() {
                 icon={CreditCard}
               />
               <p>
+                TheCore offers paid plans through Cashfree (for INR payments) and Polar (for USD payments).
                 TheCore is currently offered under a free plan
                 during its early access phase. We may introduce
                 paid plans or charges for specific features in

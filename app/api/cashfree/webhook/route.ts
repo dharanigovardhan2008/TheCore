@@ -102,31 +102,48 @@ export async function POST(req: NextRequest) {
       const isPaid = cfOrder.order_status === 'PAID';
 
       if (isPaid && isAmountValid && isCurrencyValid) {
-        // Mark order as paid
-        await adminDb.from('orders').update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-        }).eq('id', dbOrder.id);
+        // Use RPC fulfill_payment function (service_role only)
+        const { error: fulfillError } = await adminDb.rpc('fulfill_payment', {
+          p_provider: 'cashfree',
+          p_order_ref: dbOrder.cf_order_id,
+          p_provider_order_id: cfOrder.cf_order_id,
+          p_user_id: dbOrder.user_id,
+          p_billing_cycle: dbOrder.billing_cycle,
+          p_paid_amount: dbOrder.amount_paise,
+          p_currency: dbOrder.currency,
+          p_period_end: null,
+          p_subscription_id: null,
+          p_customer_id: dbOrder.user_id.toString(),
+        });
 
-        // Fetch user's profile and extend Pro plan
-        const { data: profile } = await adminDb
-          .from('profiles')
-          .select('plan, plan_expires_at')
-          .eq('id', dbOrder.user_id)
-          .single();
+        if (fulfillError) {
+          console.error('Fulfill payment RPC failed:', fulfillError);
+          // Fallback to manual update if RPC fails
+          await adminDb.from('orders').update({
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+          }).eq('id', dbOrder.id);
 
-        const newExpiry = calculateNewExpiry(
-          profile?.plan_expires_at,
-          dbOrder.billing_cycle as BillingCycle
-        );
+          // Fetch user's profile and extend Pro plan
+          const { data: profile } = await adminDb
+            .from('profiles')
+            .select('plan, plan_expires_at')
+            .eq('id', dbOrder.user_id)
+            .single();
 
-        await adminDb.from('profiles').update({
-          plan: 'pro',
-          plan_expires_at: newExpiry.toISOString(),
-        }).eq('id', dbOrder.user_id);
+          const newExpiry = calculateNewExpiry(
+            profile?.plan_expires_at,
+            dbOrder.billing_cycle as BillingCycle
+          );
+
+          await adminDb.from('profiles').update({
+            plan: 'pro',
+            plan_expires_at: newExpiry.toISOString(),
+          }).eq('id', dbOrder.user_id);
+        }
       }
     } else if (eventType === 'REFUND_SUCCESS_WEBHOOK') {
-      // Handle refund: mark order as failed / refunded
+      // Handle refund: use RPC refund_payment function
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
       const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
 
@@ -137,21 +154,35 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (dbOrder) {
-        await adminDb.from('orders').update({
-          status: 'failed',
-        }).eq('id', dbOrder.id);
+        // Use RPC refund_payment function (service_role only)
+        const { error: refundError } = await adminDb.rpc('refund_payment', {
+          p_provider: 'cashfree',
+          p_order_ref: dbOrder.cf_order_id,
+          p_provider_order_id: dbOrder.provider_order_id || '',
+          p_refunded_total: dbOrder.amount_paise, // Assuming full refund for now
+          p_is_full: true,
+        });
 
-        // Downgrade user back to free if refund processed
-        await adminDb.from('profiles').update({
-          plan: 'free',
-          plan_expires_at: null,
-        }).eq('id', dbOrder.user_id);
+        if (refundError) {
+          console.error('Refund payment RPC failed:', refundError);
+          // Fallback to manual update if RPC fails
+          await adminDb.from('orders').update({
+            status: 'failed',
+          }).eq('id', dbOrder.id);
+
+          // Downgrade user back to free if refund processed
+          await adminDb.from('profiles').update({
+            plan: 'free',
+            plan_expires_at: null,
+          }).eq('id', dbOrder.user_id);
+        }
       }
     } else if (
       eventType === 'PAYMENT_FAILED_WEBHOOK' ||
       eventType === 'PAYMENT_USER_DROPPED_WEBHOOK' ||
       eventType === 'ORDER_TERMINATED_WEBHOOK'
     ) {
+      // For failed payments, we can still use RPC or manual update
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
       const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
 
@@ -162,6 +193,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (dbOrder && dbOrder.status === 'created') {
+        // For failed payments, we'll manually update status since there's no specific RPC for this
         await adminDb.from('orders').update({
           status: 'failed',
         }).eq('id', dbOrder.id);

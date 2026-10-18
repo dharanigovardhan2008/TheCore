@@ -3,7 +3,7 @@ import BillingReturnClient from './BillingReturnClient';
 
 export const metadata: Metadata = {
   title: 'Payment Confirmation | TheCore',
-  description: 'Verifying subscription payment with Cashfree Payments.',
+  description: 'Verifying your payment.',
 };
 
 interface ReturnPageProps {

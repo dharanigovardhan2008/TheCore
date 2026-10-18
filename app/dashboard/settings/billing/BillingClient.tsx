@@ -15,6 +15,7 @@ import { createCheckoutSession } from '@/app/dashboard/actions';
 import { BillingCycle } from '@/lib/plans';
 import PaymentStatusModal from '@/components/ui/PaymentStatusModal';
 import PricingCard from '@/components/ui/PricingCard';
+import PhoneInputSheet from '@/app/components/ui/PhoneInputSheet';
 
 interface CashfreeSDKInstance {
   checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<void>;
@@ -48,6 +49,8 @@ export default function BillingClient({ usage }: BillingClientProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [paymentModalState, setPaymentModalState] = useState<'success' | 'failed' | null>(null);
   const [paymentModalError, setPaymentModalError] = useState<string | null>(null);
+  const [phoneSheetOpen, setPhoneSheetOpen] = useState(false);
+  const [pendingCycle, setPendingCycle] = useState<BillingCycle | null>(null);
 
   const proConfig = usage.planConfigs?.find((p: any) => p.id === 'pro');
   const proMonthPrice = proConfig?.price_month_rupees ?? 99;
@@ -71,7 +74,30 @@ export default function BillingClient({ usage }: BillingClientProps) {
       setLoadingCycle(cycleToUse);
       setErrorMsg(null);
       setPaymentModalError(null);
-      const session = await createCheckoutSession(cycleToUse);
+      const sessionResult = await createCheckoutSession(cycleToUse);
+      if (!sessionResult.ok) {
+        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
+          setPendingCycle(cycleToUse);
+          setPhoneSheetOpen(true);
+          return;
+        }
+        setErrorMsg(sessionResult.message);
+        setPaymentModalError(sessionResult.message);
+        setPaymentModalState('failed');
+        setLoadingCycle(null);
+        return;
+      }
+
+      // Check if it's a Polar session (has polarCheckoutId and checkoutUrl)
+      if ('polarCheckoutId' in sessionResult) {
+        // Polar session: redirect to the Polar checkout URL
+        const polarSession = sessionResult as { ok: true; orderId: string; polarCheckoutId: string; checkoutUrl: string; amountUsd: number; environment: 'production' | 'sandbox'; returnUrl: string };
+        window.location.href = polarSession.checkoutUrl;
+        return;
+      }
+
+      // Otherwise, it's a Cashfree session
+      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
 
       const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
         const win = window as unknown as CashfreeWindow;
@@ -113,6 +139,78 @@ export default function BillingClient({ usage }: BillingClientProps) {
     } finally {
       setLoadingCycle(null);
     }
+  };
+
+  const handlePhoneContinue = async (phone: string) => {
+    if (!pendingCycle) return;
+    try {
+      setLoadingCycle(pendingCycle);
+      const sessionResult = await createCheckoutSession(pendingCycle, { phone });
+      if (!sessionResult.ok) {
+        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
+          // This shouldn't happen because we validated, but just in case.
+          setErrorMsg(sessionResult.message);
+          setPaymentModalError(sessionResult.message);
+          setPaymentModalState('failed');
+          setLoadingCycle(null);
+          return;
+        }
+        setErrorMsg(sessionResult.message);
+        setPaymentModalError(sessionResult.message);
+        setPaymentModalState('failed');
+        setLoadingCycle(null);
+        return;
+      }
+      // At this point, sessionResult is guaranteed to be the success type
+      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
+
+      const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
+        const win = window as unknown as CashfreeWindow;
+        if (win.Cashfree) {
+          return win.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' });
+        }
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+          script.onload = () => {
+            const loadedWin = window as unknown as CashfreeWindow;
+            if (loadedWin.Cashfree) {
+              resolve(loadedWin.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' }));
+            } else {
+              reject(new Error('Cashfree SDK failed to initialize'));
+            }
+          };
+          script.onerror = () => reject(new Error('Failed to load Cashfree script'));
+          document.head.appendChild(script);
+        });
+      };
+
+      try {
+        const cashfree = await loadCashfreeSdk();
+        await cashfree.checkout({
+          paymentSessionId: session.paymentSessionId,
+          redirectTarget: '_self',
+        });
+      } catch (sdkErr: unknown) {
+        console.warn('SDK checkout fallback:', (sdkErr as Error)?.message);
+        router.push(`/billing/return?order_id=${session.orderId}`);
+      }
+    } catch (err: unknown) {
+      console.error('Checkout error:', err);
+      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+      setErrorMsg(msg);
+      setPaymentModalError(msg);
+      setPaymentModalState('failed');
+    } finally {
+      setLoadingCycle(null);
+      setPhoneSheetOpen(false);
+      setPendingCycle(null);
+    }
+  };
+
+  const handlePhoneCancel = () => {
+    setPhoneSheetOpen(false);
+    setPendingCycle(null);
   };
 
   const handlePrintReceipt = (order: Order) => {
@@ -176,7 +274,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
           </div>
 
           <div class="footer" style="margin-top: 40px;">
-            Thank you for subscribing to TheCore. For billing inquiries, email billing@thecore.indevs.in.<br/>
+            Thank you for subscribing to TheCore. For billing inquiries, email support@opsyl.in.<br/>
             This is an electronically generated receipt.
           </div>
           <script>
@@ -256,6 +354,65 @@ export default function BillingClient({ usage }: BillingClientProps) {
                   <p className="text-[15px] text-[var(--text-secondary)]">
                     {isPro ? 'Unlimited Pro' : 'Free Tier'}
                   </p>
+                  {/* Show payment provider info for Pro users */}
+                  {isPro && usage.orders.length > 0 && (
+                    <div className="text-[13px] text-[var(--text-secondary)] mt-2">
+                      {usage.orders.slice(-1)[0]?.currency === 'USD' ? (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-green-500" />
+                            <span>Polar (USD)</span>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            <span>Cashfree (INR)</span>
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Manage subscription button for Polar users */}
+                  {isPro && usage.orders.length > 0 && usage.orders.slice(-1)[0]?.currency === 'USD' && (
+                    <div className="mt-4">
+                      <button
+                        onClick={async () => {
+                          try {
+                            // Get the latest Polar order to get the customer ID
+                            const latestOrder = usage.orders.slice(-1)[0];
+                            if (latestOrder) {
+                              // In a real implementation, we would fetch the Polar customer ID from the user's profile
+                              // For now, we'll use the user ID as external_customer_id to find the customer
+                              const { data: profile } = await supabase
+                                .from('profiles')
+                                .select('polar_customer_id')
+                                .eq('id', latestOrder.user_id)
+                                .single();
+
+                              if (profile?.polar_customer_id) {
+                                const { url } = await createCustomerPortalSession(profile.polar_customer_id);
+                                window.open(url, '_blank');
+                              } else {
+                                // Fallback: try to create a portal session using the user ID
+                                // This assumes the external_customer_id in Polar is the user ID
+                                const { url } = await createCustomerPortalSession(latestOrder.user_id);
+                                window.open(url, '_blank');
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Failed to create customer portal session:', err);
+                            alert('Unable to open subscription management portal. Please try again later.');
+                          }
+                        }}
+                        className="w-full flex items-center justify-center px-4 py-2 rounded-[20px] border border-[var(--border-light)] bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition-colors"
+                      >
+                        Manage subscription
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {isPro && usage.plan_expires_at && (
@@ -381,7 +538,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
               Secure checkout powered by Cashfree Payments
             </p>
             <p className="text-xs text-[var(--text-tertiary)]">
-              UPI, cards, and NetBanking supported · 7-day money-back guarantee
+              UPI, cards, and NetBanking supported
             </p>
           </div>
         </section>
@@ -500,6 +657,15 @@ export default function BillingClient({ usage }: BillingClientProps) {
           }}
           onSecondaryClick={() => setPaymentModalState(null)}
           onClose={() => setPaymentModalState(null)}
+        />
+      )}
+
+      {phoneSheetOpen && (
+        <PhoneInputSheet
+          isOpen={phoneSheetOpen}
+          onOpenChange={setPhoneSheetOpen}
+          onContinue={handlePhoneContinue}
+          onCancel={handlePhoneCancel}
         />
       )}
     </div>

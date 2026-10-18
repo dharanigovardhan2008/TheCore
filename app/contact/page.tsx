@@ -38,10 +38,10 @@ export default function ContactPage() {
                   <h3 className="text-sm font-semibold">Email Us</h3>
                   <p className="text-xs text-[var(--text-content-secondary)] mt-0.5">Direct support & billing</p>
                   <a
-                    href="mailto:contact@thecore.indevs.in"
+                    href="mailto:support@opsyl.in"
                     className="text-sm font-medium text-blue-500 hover:underline block mt-1 break-all"
                   >
-                    contact@thecore.indevs.in
+                    support@opsyl.in
                   </a>
                 </div>
               </div>

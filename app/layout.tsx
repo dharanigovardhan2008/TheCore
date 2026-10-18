@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Caveat } from "next/font/google";
 import NavigationLoader from "@/components/ui/NavigationLoader";
 import "./globals.css";
+import { siteUrl } from "@/lib/site-url";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -21,8 +22,6 @@ export const viewport = {
   initialScale: 1,
   viewportFit: "cover",
 };
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://thecore.indevs.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
