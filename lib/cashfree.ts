@@ -6,8 +6,9 @@ export interface CreateOrderParams {
   customerId: string;
   customerEmail: string;
   customerName?: string;
-  customerPhone?: string;
+  customerPhone: string;
   returnUrl: string;
+  notifyUrl: string;
   orderNote?: string;
 }
 
@@ -59,17 +60,20 @@ export function getCashfreeBaseUrl(): string {
 }
 
 function getCredentials() {
-  const appId = process.env.CASHFREE_APP_ID;
-  const secretKey = process.env.CASHFREE_SECRET_KEY;
+  const appId = process.env.CASHFREE_APP_ID?.trim();
+  const secretKey = process.env.CASHFREE_SECRET_KEY?.trim();
 
+  // Never fall back to mock or fake credentials, in any environment.
   if (!appId || !secretKey) {
     throw new Error('Cashfree credentials (CASHFREE_APP_ID, CASHFREE_SECRET_KEY) are missing.');
   }
 
-  return {
-    appId: appId,
-    secretKey: secretKey,
-  };
+  return { appId, secretKey };
+}
+
+/** True when the 10-digit Indian mobile number Cashfree requires is valid. */
+export function isValidIndianMobile(phone?: string | null): phone is string {
+  return typeof phone === 'string' && /^[6-9]\d{9}$/.test(phone);
 }
 
 /**
@@ -80,11 +84,9 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
   const { appId, secretKey } = getCredentials();
   const baseUrl = getCashfreeBaseUrl();
 
-  // Cashfree requires a valid customer phone (10 digits). Must be provided.
-  if (!params.customerPhone || !/^\d{10}$/.test(params.customerPhone)) {
-    throw new Error('Valid 10-digit customer phone number is required');
+  if (!isValidIndianMobile(params.customerPhone)) {
+    throw new Error('A valid 10-digit Indian mobile number is required for INR checkout.');
   }
-  const phone = params.customerPhone;
 
   const body = {
     order_id: params.orderId,
@@ -94,10 +96,12 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
       customer_id: params.customerId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50),
       customer_name: params.customerName || 'Subscriber',
       customer_email: params.customerEmail,
-      customer_phone: phone,
+      customer_phone: params.customerPhone,
     },
     order_meta: {
       return_url: params.returnUrl,
+      // Per-order webhook URL so the event reaches THIS product (shared Cashfree account).
+      notify_url: params.notifyUrl,
     },
     order_note: params.orderNote || 'TheCore Subscription',
   };
@@ -142,7 +146,6 @@ export async function createCashfreeOrder(params: CreateOrderParams): Promise<Ca
 export async function fetchCashfreeOrder(orderId: string): Promise<CashfreeFetchOrderResponse> {
   const { appId, secretKey } = getCredentials();
   const baseUrl = getCashfreeBaseUrl();
-
 
   const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, {
     method: 'GET',
@@ -246,3 +249,30 @@ export function verifyCashfreeWebhookSignature({
   }
 }
 
+
+export interface CashfreeRefund {
+  refund_id: string;
+  refund_amount: number;
+  refund_status: 'SUCCESS' | 'PENDING' | 'CANCELLED' | 'ONHOLD' | 'FAILED' | string;
+}
+
+/**
+ * Authoritative list of refunds for an order. Used to compute the TOTAL refunded so far
+ * (a refund webhook describes one refund; a partial refund must not remove Pro).
+ */
+export async function fetchCashfreeRefunds(orderId: string): Promise<CashfreeRefund[]> {
+  const { appId, secretKey } = getCredentials();
+  const response = await fetch(`${getCashfreeBaseUrl()}/orders/${encodeURIComponent(orderId)}/refunds`, {
+    method: 'GET',
+    headers: {
+      'x-client-id': appId,
+      'x-client-secret': secretKey,
+      'x-api-version': CASHFREE_API_VERSION,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Cashfree refunds: ${response.status} ${response.statusText}`);
+  }
+  const body = (await response.json()) as CashfreeRefund[] | { data?: CashfreeRefund[] };
+  return Array.isArray(body) ? body : body.data ?? [];
+}

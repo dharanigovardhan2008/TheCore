@@ -8,21 +8,9 @@ import { PLANS, BillingCycle } from '@/lib/plans';
 import { createCheckoutSession } from '@/app/dashboard/actions';
 import PaymentStatusModal from '@/components/ui/PaymentStatusModal';
 import PricingCard from '@/components/ui/PricingCard';
-import PhoneInputSheet from '@/app/components/ui/PhoneInputSheet';
-
-interface CashfreeSDKInstance {
-  checkout: (opts: {
-    paymentSessionId: string;
-    redirectTarget?: string;
-    returnUrl?: string;
-  }) => Promise<{ error?: { message: string; code?: string; type?: string }; redirect?: boolean }>;
-}
-
-type CashfreeInit = (opts: { mode: 'production' | 'sandbox' }) => CashfreeSDKInstance;
-
-interface CashfreeWindow extends Window {
-  Cashfree?: CashfreeInit;
-}
+import { CurrencySwitch, PhonePrompt } from '@/components/ui/CheckoutControls';
+import { launchCheckout } from '@/lib/checkout-client';
+import { formatMoney, providerForCurrency, type Currency } from '@/lib/currency';
 
 interface PricingClientProps {
   isLoggedIn: boolean;
@@ -30,6 +18,9 @@ interface PricingClientProps {
   isPro: boolean;
   planExpiresAt: string | null;
   planConfigs?: any[];
+  /** Decided on the server from the request country. */
+  initialCurrency?: Currency;
+  allowInr?: boolean;
 }
 
 export default function PricingClient({
@@ -37,25 +28,33 @@ export default function PricingClient({
   isPro,
   planExpiresAt,
   planConfigs,
+  initialCurrency = 'INR',
+  allowInr = true,
 }: PricingClientProps) {
   const router = useRouter();
   const [loadingCycle, setLoadingCycle] = useState<BillingCycle | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [paymentModalState, setPaymentModalState] = useState<'success' | 'failed' | null>(null);
   const [paymentModalError, setPaymentModalError] = useState<string | null>(null);
-  const [phoneSheetOpen, setPhoneSheetOpen] = useState(false);
-  const [pendingCycle, setPendingCycle] = useState<BillingCycle | null>(null);
+  const [currency, setCurrency] = useState<Currency>(initialCurrency);
+  const [phonePromptCycle, setPhonePromptCycle] = useState<BillingCycle | null>(null);
 
   const freePlan = PLANS.free;
   const proPlan = PLANS.pro;
 
   const proConfig = planConfigs?.find((p) => p.id === 'pro');
-  const proMonthPrice = proConfig?.price_month_rupees ?? proPlan.pricing!.month.amountInRupees;
-  const proYearPrice = proConfig?.price_year_rupees ?? proPlan.pricing!.year.amountInRupees;
+  const usd = currency === 'USD';
+  const proMonthPrice: number = usd
+    ? Number(proConfig?.price_month_usd) || 5
+    : proConfig?.price_month_rupees ?? proPlan.pricing!.month.amountInRupees;
+  const proYearPrice: number = usd
+    ? Number(proConfig?.price_year_usd) || 30
+    : proConfig?.price_year_rupees ?? proPlan.pricing!.year.amountInRupees;
+  const perMonthOfYear = usd ? (proYearPrice / 12).toFixed(2) : String(Math.round(proYearPrice / 12));
   const proDiscountLabel = proConfig?.discount_label || (proConfig?.discount_percent ? `Save ${proConfig.discount_percent}%` : 'Save 16%');
   const proFeaturesFromConfig = proConfig?.features?.length ? proConfig.features : proPlan.features;
 
-  const handleUpgrade = async (cycle: BillingCycle) => {
+  const handleUpgrade = async (cycle: BillingCycle, phone?: string) => {
     if (!isLoggedIn) {
       router.push('/login?next=/pricing');
       return;
@@ -66,158 +65,33 @@ export default function PricingClient({
       setErrorMsg(null);
       setPaymentModalError(null);
 
-      const sessionResult = await createCheckoutSession(cycle);
-      if (!sessionResult.ok) {
-        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
-          setPendingCycle(cycle);
-          setPhoneSheetOpen(true);
+      const session = await createCheckoutSession(cycle, { provider: providerForCurrency(currency), phone });
+      if (!session.ok) {
+        if (session.code === 'PHONE_REQUIRED') {
+          setPhonePromptCycle(cycle);
           return;
         }
-        setErrorMsg(sessionResult.message);
-        setPaymentModalError(sessionResult.message);
+        setErrorMsg(session.message);
+        setPaymentModalError(session.message);
         setPaymentModalState('failed');
-        setLoadingCycle(null);
         return;
       }
-      // At this point, sessionResult is guaranteed to be the success type
-      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
 
-      const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
-        const win = window as unknown as CashfreeWindow;
-        if (win.Cashfree) {
-          return win.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' });
-        }
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-          script.onload = () => {
-            const loadedWin = window as unknown as CashfreeWindow;
-            if (loadedWin.Cashfree) {
-              resolve(loadedWin.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' }));
-            } else {
-              reject(new Error('Cashfree SDK failed to initialize'));
-            }
-          };
-          script.onerror = () => reject(new Error('Failed to load Cashfree checkout script'));
-          document.head.appendChild(script);
-        });
-      };
-
-      try {
-        const cashfree = await loadCashfreeSdk();
-        const checkoutResult = await cashfree.checkout({
-          paymentSessionId: session.paymentSessionId,
-          redirectTarget: '_self',
-          returnUrl: session.returnUrl,
-        });
-
-        if (checkoutResult?.error) {
-          console.warn('[Cashfree Checkout SDK Error]:', checkoutResult.error);
-          const msg = checkoutResult.error.message || "We couldn't complete your payment. Please try again or choose another payment method.";
-          setErrorMsg(msg);
-          setPaymentModalError(msg);
-          setPaymentModalState('failed');
-          setLoadingCycle(null);
-          return;
-        }
-      } catch (sdkErr: unknown) {
-        console.warn('Direct Cashfree SDK checkout warning:', (sdkErr as Error)?.message);
-        router.push(`/billing/return?order_id=${session.orderId}`);
+      const launchError = await launchCheckout(session);
+      if (launchError) {
+        setErrorMsg(launchError);
+        setPaymentModalError(launchError);
+        setPaymentModalState('failed');
       }
     } catch (err: unknown) {
       console.error('Upgrade error:', err);
-      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+      const msg = "We couldn't start your payment. Please try again or contact support.";
       setErrorMsg(msg);
       setPaymentModalError(msg);
       setPaymentModalState('failed');
     } finally {
       setLoadingCycle(null);
     }
-  };
-
-  const handlePhoneContinue = async (phone: string) => {
-    if (!pendingCycle) return;
-    try {
-      setLoadingCycle(pendingCycle);
-      const sessionResult = await createCheckoutSession(pendingCycle, { phone });
-      if (!sessionResult.ok) {
-        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
-          // This shouldn't happen because we validated, but just in case.
-          setErrorMsg(sessionResult.message);
-          setPaymentModalError(sessionResult.message);
-          setPaymentModalState('failed');
-          setLoadingCycle(null);
-          return;
-        }
-        setErrorMsg(sessionResult.message);
-        setPaymentModalError(sessionResult.message);
-        setPaymentModalState('failed');
-        setLoadingCycle(null);
-        return;
-      }
-      // At this point, sessionResult is guaranteed to be the success type
-      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
-
-      const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
-        const win = window as unknown as CashfreeWindow;
-        if (win.Cashfree) {
-          return win.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' });
-        }
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-          script.onload = () => {
-            const loadedWin = window as unknown as CashfreeWindow;
-            if (loadedWin.Cashfree) {
-              resolve(loadedWin.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' }));
-            } else {
-              reject(new Error('Cashfree SDK failed to initialize'));
-            }
-          };
-          script.onerror = () => reject(new Error('Failed to load Cashfree checkout script'));
-          document.head.appendChild(script);
-        });
-      };
-
-      try {
-        const cashfree = await loadCashfreeSdk();
-        const checkoutResult = await cashfree.checkout({
-          paymentSessionId: session.paymentSessionId,
-          redirectTarget: '_self',
-          returnUrl: session.returnUrl,
-        });
-
-        if (checkoutResult?.error) {
-          console.warn('[Cashfree Checkout SDK Error]:', checkoutResult.error);
-          const msg = checkoutResult.error.message || "We couldn't complete your payment. Please try again or choose another payment method.";
-          setErrorMsg(msg);
-          setPaymentModalError(msg);
-          setPaymentModalState('failed');
-          setLoadingCycle(null);
-          setPhoneSheetOpen(false);
-          setPendingCycle(null);
-          return;
-        }
-      } catch (sdkErr: unknown) {
-        console.warn('Direct Cashfree SDK checkout warning:', (sdkErr as Error)?.message);
-        router.push(`/billing/return?order_id=${session.orderId}`);
-      }
-    } catch (err: unknown) {
-      console.error('Upgrade error:', err);
-      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
-      setErrorMsg(msg);
-      setPaymentModalError(msg);
-      setPaymentModalState('failed');
-    } finally {
-      setLoadingCycle(null);
-      setPhoneSheetOpen(false);
-      setPendingCycle(null);
-    }
-  };
-
-  const handlePhoneCancel = () => {
-    setPhoneSheetOpen(false);
-    setPendingCycle(null);
   };
 
   return (
@@ -261,19 +135,14 @@ export default function PricingClient({
           </p>
         </div>
 
+        <div className="text-center">
+          <CurrencySwitch value={currency} onChange={setCurrency} allowInr={allowInr} />
+        </div>
+
         {errorMsg && (
           <div className="max-w-md mx-auto mb-8 p-4 rounded-[20px] bg-red-50 border border-red-200 text-red-700 text-sm text-center font-medium animate-in fade-in slide-in-from-top-2 duration-300">
             {errorMsg}
           </div>
-        )}
-
-        {phoneSheetOpen && (
-          <PhoneInputSheet
-            isOpen={phoneSheetOpen}
-            onOpenChange={setPhoneSheetOpen}
-            onContinue={handlePhoneContinue}
-            onCancel={handlePhoneCancel}
-          />
         )}
 
         {/* Three-Card Pricing Grid */}
@@ -283,7 +152,7 @@ export default function PricingClient({
           <PricingCard
             name="Free"
             description="Perfect for students and developers getting started with personal projects"
-            price={0}
+            price={formatMoney(0, currency)}
             period="/forever"
             features={freePlan.features}
             badge={isLoggedIn && !isPro ? "Current Plan" : undefined}
@@ -302,26 +171,26 @@ export default function PricingClient({
           <PricingCard
             name="Pro"
             description="For freelancers, indie hackers, and professional builders managing multiple apps"
-            price={proYearPrice}
+            price={formatMoney(proYearPrice, currency)}
             period="/year"
             features={proFeaturesFromConfig}
             badge="Recommended"
             isFeatured
-            ctaLabel={isPro ? `Extend for ₹${proYearPrice}` : `Subscribe for ₹${proYearPrice}/year`}
+            ctaLabel={isPro ? `Extend for ${formatMoney(proYearPrice, currency)}` : `Subscribe for ${formatMoney(proYearPrice, currency)}/year`}
             ctaAction={() => handleUpgrade('year')}
             ctaLoading={loadingCycle === 'year'}
             ctaDisabled={loadingCycle !== null}
-            secondaryLabel={`~₹${Math.round(proYearPrice / 12)}/month · ${proDiscountLabel}`}
+            secondaryLabel={`~${usd ? '$' : '₹'}${perMonthOfYear}/month · ${proDiscountLabel}`}
           />
 
           {/* Card 3: Pro Monthly */}
           <PricingCard
             name="Pro Monthly"
             description="Flexible monthly subscription with the same unlimited access and priority support"
-            price={proMonthPrice}
+            price={formatMoney(proMonthPrice, currency)}
             period="/month"
             features={proFeaturesFromConfig}
-            ctaLabel={isPro ? `Extend for ₹${proMonthPrice}` : `Subscribe for ₹${proMonthPrice}/month`}
+            ctaLabel={isPro ? `Extend for ${formatMoney(proMonthPrice, currency)}` : `Subscribe for ${formatMoney(proMonthPrice, currency)}/month`}
             ctaAction={() => handleUpgrade('month')}
             ctaLoading={loadingCycle === 'month'}
             ctaDisabled={loadingCycle !== null}
@@ -334,7 +203,7 @@ export default function PricingClient({
         <div className="text-center space-y-3 max-w-xl mx-auto pt-4 border-t border-[#DCE9E3]">
           <p className="text-xs text-[#8E9F9A] flex items-center justify-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-emerald-500" />
-            Prices in INR, taxes as applicable. Secured by Cashfree Payments.
+            {usd ? 'Prices in USD; taxes are added at checkout where applicable. Payments secured by Polar.' : 'Prices in INR, taxes as applicable. Payments secured by Cashfree.'}
           </p>
           <div className="flex items-center justify-center gap-4 text-xs text-[#647570]">
             <Link href="/refund-policy" className="hover:text-[#172B2A] hover:underline transition-colors">Refund Policy</Link>
@@ -347,6 +216,17 @@ export default function PricingClient({
           </div>
         </div>
       </div>
+
+      {phonePromptCycle && (
+        <PhonePrompt
+          onCancel={() => setPhonePromptCycle(null)}
+          onSubmit={(phone) => {
+            const c = phonePromptCycle;
+            setPhonePromptCycle(null);
+            void handleUpgrade(c, phone);
+          }}
+        />
+      )}
 
       {paymentModalState && (
         <PaymentStatusModal

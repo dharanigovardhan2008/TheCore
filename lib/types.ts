@@ -13,9 +13,10 @@ export interface Profile {
   terms_accepted_at?: string | null;
   plan?: 'free' | 'pro' | string | null;
   plan_expires_at?: string | null;
+  plan_provider?: 'cashfree' | 'polar' | null;
+  cancel_at_period_end?: boolean | null;
   role?: 'user' | 'admin' | string | null;
   is_disabled?: boolean | null;
-  polar_customer_id?: string | null;
   created_at: string;
 }
 
@@ -26,11 +27,17 @@ export interface Order {
   billing_cycle: 'month' | 'year';
   amount_paise: number;
   currency: string;
+  /** Our own merchant order reference (prefix core_), used for BOTH providers. */
   cf_order_id: string;
   cf_payment_session_id?: string | null;
-  status: 'created' | 'paid' | 'failed' | 'expired';
+  provider: 'cashfree' | 'polar';
+  product: string;
+  provider_checkout_id?: string | null;
   provider_order_id?: string | null;
   provider_subscription_id?: string | null;
+  /** Total refunded so far, in minor units (paise or cents). */
+  refunded_amount?: number;
+  status: 'created' | 'paid' | 'failed' | 'expired' | 'refunded' | 'partially_refunded';
   created_at: string;
   paid_at?: string | null;
   receipt_url?: string | null;

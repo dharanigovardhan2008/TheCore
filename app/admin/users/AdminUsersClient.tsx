@@ -21,6 +21,7 @@ import {
   revokeUserPro,
   toggleUserDisabled,
 } from '../actions';
+import { formatMinor } from '@/lib/currency';
 
 type AdminUserItem = Awaited<ReturnType<typeof getAdminUsers>>['users'][number];
 type AdminUserDetail = Awaited<ReturnType<typeof getAdminUserDetail>>;
@@ -511,7 +512,7 @@ export default function AdminUsersClient({ initialUsers, totalCount }: AdminUser
 
                           <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                             <span className="font-bold text-sm text-[var(--text-content)]">
-                              ₹{(ord.amount_paise / 100).toFixed(2)}
+                              {formatMinor(ord.amount_paise, ord.currency)}
                             </span>
                             <span
                               className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize flex items-center gap-1 ${

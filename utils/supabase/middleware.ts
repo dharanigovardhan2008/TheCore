@@ -33,8 +33,8 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Dev Mode Bypass
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("mock-project")) {
+  // Dev-only bypass when no real Supabase project is configured. NEVER active in production.
+  if (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("mock-project")) {
     return supabaseResponse
   }
 

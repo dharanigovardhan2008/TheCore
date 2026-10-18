@@ -90,7 +90,7 @@ export async function getAdminOverviewStats() {
     adminDb.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
     adminDb.from('profiles').select('*', { count: 'exact', head: true }).eq('plan', 'pro'),
     adminDb.from('projects').select('*', { count: 'exact', head: true }),
-    adminDb.from('orders').select('amount_paise').eq('status', 'paid').gte('paid_at', startOfMonth),
+    adminDb.from('orders').select('amount_paise, currency').eq('status', 'paid').gte('paid_at', startOfMonth),
     adminDb
       .from('profiles')
       .select('id, display_name, plan, created_at, role')
@@ -98,15 +98,17 @@ export async function getAdminOverviewStats() {
       .limit(8),
     adminDb
       .from('orders')
-      .select('id, cf_order_id, amount_paise, status, billing_cycle, created_at, user_id')
+      .select('id, cf_order_id, amount_paise, currency, provider, status, billing_cycle, created_at, user_id')
       .order('created_at', { ascending: false })
       .limit(8),
   ]);
 
-  const revenuePaiseThisMonth = (monthOrders || []).reduce(
-    (sum, o) => sum + (o.amount_paise || 0),
-    0
-  );
+  // Never add INR and USD together: keep one total per currency (minor units -> major).
+  const revenueMinor = { INR: 0, USD: 0 };
+  for (const o of monthOrders || []) {
+    const cur = String(o.currency || 'INR').toUpperCase() === 'USD' ? 'USD' : 'INR';
+    revenueMinor[cur] += o.amount_paise || 0;
+  }
 
   return {
     totalUsers: totalUsers || 0,
@@ -114,7 +116,8 @@ export async function getAdminOverviewStats() {
     newUsers30d: users30d || 0,
     paidUsers: paidUsers || 0,
     totalProjects: totalProjects || 0,
-    revenueThisMonthRupees: Math.round(revenuePaiseThisMonth / 100),
+    revenueThisMonthInr: Math.round(revenueMinor.INR / 100),
+    revenueThisMonthUsd: Math.round(revenueMinor.USD) / 100,
     recentSignups: recentSignups || [],
     recentOrders: recentOrders || [],
   };

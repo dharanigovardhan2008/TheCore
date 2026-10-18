@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { verifyOrderReturn, verifyPolarOrderReturn, getOrderById } from '@/app/dashboard/actions';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { verifyOrderReturn } from '@/app/dashboard/actions';
 import PaymentStatusModal, { type PaymentModalStatus } from '@/components/ui/PaymentStatusModal';
 
 import type { Order } from '@/lib/types';
+import { formatMinor } from '@/lib/currency';
 
 interface BillingReturnClientProps {
   orderId: string | null;
@@ -25,24 +26,7 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
     try {
       setStatus('loading');
       setErrorMessage(null);
-
-      // First, get the order details to determine which payment provider to use
-      const order = await getOrderById(orderId);
-      if (!order) {
-        setStatus('failed');
-        setErrorMessage('Order not found in database. If you completed payment, please check your Billing page or contact support.');
-        return;
-      }
-
-      // Determine which verification function to use based on currency
-      let res;
-      if (order.currency === 'USD') {
-        // Polar verification
-        res = await verifyPolarOrderReturn(orderId);
-      } else {
-        // Cashfree verification (default for INR and other currencies)
-        res = await verifyOrderReturn(orderId);
-      }
+      const res = await verifyOrderReturn(orderId);
 
       if (res.orderStatus === 'paid') {
         setStatus('success');
@@ -82,6 +66,18 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
       ignore = true;
     };
   }, [checkStatus]);
+
+  // International payments are confirmed by a webhook that can arrive a few seconds after the
+  // redirect, so re-check about every 3 seconds (max 20 times) while the status is pending.
+  const pollCount = useRef(0);
+  useEffect(() => {
+    if (status !== 'pending' || pollCount.current >= 20) return;
+    const timer = setTimeout(() => {
+      pollCount.current += 1;
+      void checkStatus();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [status, checkStatus]);
 
   // Route directly to the pixel-perfect Apple-inspired 3D modal layout
   return (
@@ -128,7 +124,8 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
       secondaryButtonHref={status === 'failed' || status === 'pending' ? '/dashboard' : undefined}
       ticketData={{
         orderId: orderDetails?.cf_order_id || orderId || undefined,
-        amountInRupees: orderDetails?.amount_paise ? orderDetails.amount_paise / 100 : undefined,
+        amountText: orderDetails?.amount_paise ? formatMinor(orderDetails.amount_paise, orderDetails.currency) : undefined,
+        provider: orderDetails?.provider,
         planName: orderDetails?.billing_cycle === 'year' ? 'TheCore Pro Annual' : 'TheCore Pro Monthly',
         dateStr: orderDetails?.paid_at
           ? new Date(orderDetails.paid_at).toLocaleDateString('en-GB', {

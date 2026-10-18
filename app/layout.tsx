@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { DM_Sans, Caveat } from "next/font/google";
 import NavigationLoader from "@/components/ui/NavigationLoader";
+import { getSiteUrlForMetadata } from '@/lib/site-url';
 import "./globals.css";
-import { siteUrl } from "@/lib/site-url";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -22,6 +22,8 @@ export const viewport = {
   initialScale: 1,
   viewportFit: "cover",
 };
+
+const siteUrl = getSiteUrlForMetadata();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

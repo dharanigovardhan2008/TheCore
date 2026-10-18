@@ -14,14 +14,15 @@ export function createAdminClient() {
     throw new Error('createAdminClient must only be invoked in server environments.');
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mock-project.supabase.co';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-  if (!serviceRoleKey) {
-    console.warn('[Supabase Admin] SUPABASE_SERVICE_ROLE_KEY is not defined in environment variables. Admin capabilities requiring service role will fall back.');
+  // No mock or anon-key fallback: payments and admin writes must never run with the wrong key.
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for server-side admin access.');
   }
 
-  return createClient(supabaseUrl, serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'mock-service-role-key', {
+  return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

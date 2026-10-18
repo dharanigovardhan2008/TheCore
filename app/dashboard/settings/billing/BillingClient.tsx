@@ -11,23 +11,18 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import type { Order } from '@/lib/types';
-import { createCheckoutSession } from '@/app/dashboard/actions';
+import { createCheckoutSession, createCustomerPortalSession } from '@/app/dashboard/actions';
 import { BillingCycle } from '@/lib/plans';
 import PaymentStatusModal from '@/components/ui/PaymentStatusModal';
 import PricingCard from '@/components/ui/PricingCard';
-import PhoneInputSheet from '@/app/components/ui/PhoneInputSheet';
-
-interface CashfreeSDKInstance {
-  checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<void>;
-}
-
-type CashfreeInit = (opts: { mode: 'production' | 'sandbox' }) => CashfreeSDKInstance;
-
-interface CashfreeWindow extends Window {
-  Cashfree?: CashfreeInit;
-}
+import { CurrencySwitch, PhonePrompt } from '@/components/ui/CheckoutControls';
+import { launchCheckout } from '@/lib/checkout-client';
+import { formatMoney, formatMinor, providerForCurrency, type Currency } from '@/lib/currency';
 
 interface BillingClientProps {
+  /** Decided on the server from the request country. */
+  initialCurrency?: Currency;
+  allowInr?: boolean;
   usage: {
     plan: 'free' | 'pro';
     plan_expires_at: string | null;
@@ -40,21 +35,26 @@ interface BillingClientProps {
     };
     orders: Order[];
     planConfigs?: any[];
+    planProvider?: 'cashfree' | 'polar' | null;
+    hasPolarCustomer?: boolean;
+    cancelAtPeriodEnd?: boolean;
   };
 }
 
-export default function BillingClient({ usage }: BillingClientProps) {
+export default function BillingClient({ usage, initialCurrency = 'INR', allowInr = true }: BillingClientProps) {
   const router = useRouter();
   const [loadingCycle, setLoadingCycle] = useState<BillingCycle | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [paymentModalState, setPaymentModalState] = useState<'success' | 'failed' | null>(null);
   const [paymentModalError, setPaymentModalError] = useState<string | null>(null);
-  const [phoneSheetOpen, setPhoneSheetOpen] = useState(false);
-  const [pendingCycle, setPendingCycle] = useState<BillingCycle | null>(null);
+  const [currency, setCurrency] = useState<Currency>(initialCurrency);
+  const [phonePromptCycle, setPhonePromptCycle] = useState<BillingCycle | null>(null);
 
   const proConfig = usage.planConfigs?.find((p: any) => p.id === 'pro');
-  const proMonthPrice = proConfig?.price_month_rupees ?? 99;
-  const proYearPrice = proConfig?.price_year_rupees ?? 999;
+  const usd = currency === 'USD';
+  const proMonthPrice: number = usd ? Number(proConfig?.price_month_usd) || 5 : proConfig?.price_month_rupees ?? 99;
+  const proYearPrice: number = usd ? Number(proConfig?.price_year_usd) || 30 : proConfig?.price_year_rupees ?? 999;
+  const perMonthOfYear = usd ? (proYearPrice / 12).toFixed(2) : String(Math.round(proYearPrice / 12));
   const proDiscountLabel = proConfig?.discount_label || (proConfig?.discount_percent ? `Save ${proConfig.discount_percent}%` : 'Save 16%');
 
   const isPro = usage.isPro;
@@ -69,70 +69,33 @@ export default function BillingClient({ usage }: BillingClientProps) {
     'Early access to new features',
   ];
 
-  const handleCheckout = async (cycleToUse: BillingCycle) => {
+  const handleCheckout = async (cycleToUse: BillingCycle, phone?: string) => {
     try {
       setLoadingCycle(cycleToUse);
       setErrorMsg(null);
       setPaymentModalError(null);
-      const sessionResult = await createCheckoutSession(cycleToUse);
-      if (!sessionResult.ok) {
-        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
-          setPendingCycle(cycleToUse);
-          setPhoneSheetOpen(true);
+
+      const session = await createCheckoutSession(cycleToUse, { provider: providerForCurrency(currency), phone });
+      if (!session.ok) {
+        if (session.code === 'PHONE_REQUIRED') {
+          setPhonePromptCycle(cycleToUse);
           return;
         }
-        setErrorMsg(sessionResult.message);
-        setPaymentModalError(sessionResult.message);
+        setErrorMsg(session.message);
+        setPaymentModalError(session.message);
         setPaymentModalState('failed');
-        setLoadingCycle(null);
         return;
       }
 
-      // Check if it's a Polar session (has polarCheckoutId and checkoutUrl)
-      if ('polarCheckoutId' in sessionResult) {
-        // Polar session: redirect to the Polar checkout URL
-        const polarSession = sessionResult as { ok: true; orderId: string; polarCheckoutId: string; checkoutUrl: string; amountUsd: number; environment: 'production' | 'sandbox'; returnUrl: string };
-        window.location.href = polarSession.checkoutUrl;
-        return;
-      }
-
-      // Otherwise, it's a Cashfree session
-      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
-
-      const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
-        const win = window as unknown as CashfreeWindow;
-        if (win.Cashfree) {
-          return win.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' });
-        }
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-          script.onload = () => {
-            const loadedWin = window as unknown as CashfreeWindow;
-            if (loadedWin.Cashfree) {
-              resolve(loadedWin.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' }));
-            } else {
-              reject(new Error('Cashfree SDK failed to initialize'));
-            }
-          };
-          script.onerror = () => reject(new Error('Failed to load Cashfree script'));
-          document.head.appendChild(script);
-        });
-      };
-
-      try {
-        const cashfree = await loadCashfreeSdk();
-        await cashfree.checkout({
-          paymentSessionId: session.paymentSessionId,
-          redirectTarget: '_self',
-        });
-      } catch (sdkErr: unknown) {
-        console.warn('SDK checkout fallback:', (sdkErr as Error)?.message);
-        router.push(`/billing/return?order_id=${session.orderId}`);
+      const launchError = await launchCheckout(session);
+      if (launchError) {
+        setErrorMsg(launchError);
+        setPaymentModalError(launchError);
+        setPaymentModalState('failed');
       }
     } catch (err: unknown) {
       console.error('Checkout error:', err);
-      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
+      const msg = "We couldn't start your payment. Please try again or contact support.";
       setErrorMsg(msg);
       setPaymentModalError(msg);
       setPaymentModalState('failed');
@@ -141,76 +104,17 @@ export default function BillingClient({ usage }: BillingClientProps) {
     }
   };
 
-  const handlePhoneContinue = async (phone: string) => {
-    if (!pendingCycle) return;
-    try {
-      setLoadingCycle(pendingCycle);
-      const sessionResult = await createCheckoutSession(pendingCycle, { phone });
-      if (!sessionResult.ok) {
-        if (sessionResult.code === 'PHONE_REQUIRED' || sessionResult.code === 'INVALID_PHONE') {
-          // This shouldn't happen because we validated, but just in case.
-          setErrorMsg(sessionResult.message);
-          setPaymentModalError(sessionResult.message);
-          setPaymentModalState('failed');
-          setLoadingCycle(null);
-          return;
-        }
-        setErrorMsg(sessionResult.message);
-        setPaymentModalError(sessionResult.message);
-        setPaymentModalState('failed');
-        setLoadingCycle(null);
-        return;
-      }
-      // At this point, sessionResult is guaranteed to be the success type
-      const session = sessionResult as { ok: true; orderId: string; cfOrderId: string; paymentSessionId: string; amountRupees: number; environment: 'production' | 'sandbox'; returnUrl: string };
-
-      const loadCashfreeSdk = async (): Promise<CashfreeSDKInstance> => {
-        const win = window as unknown as CashfreeWindow;
-        if (win.Cashfree) {
-          return win.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' });
-        }
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-          script.onload = () => {
-            const loadedWin = window as unknown as CashfreeWindow;
-            if (loadedWin.Cashfree) {
-              resolve(loadedWin.Cashfree({ mode: session.environment === 'production' ? 'production' : 'sandbox' }));
-            } else {
-              reject(new Error('Cashfree SDK failed to initialize'));
-            }
-          };
-          script.onerror = () => reject(new Error('Failed to load Cashfree script'));
-          document.head.appendChild(script);
-        });
-      };
-
-      try {
-        const cashfree = await loadCashfreeSdk();
-        await cashfree.checkout({
-          paymentSessionId: session.paymentSessionId,
-          redirectTarget: '_self',
-        });
-      } catch (sdkErr: unknown) {
-        console.warn('SDK checkout fallback:', (sdkErr as Error)?.message);
-        router.push(`/billing/return?order_id=${session.orderId}`);
-      }
-    } catch (err: unknown) {
-      console.error('Checkout error:', err);
-      const msg = (err as Error)?.message || "We couldn't complete your payment. Please try again or choose another payment method.";
-      setErrorMsg(msg);
-      setPaymentModalError(msg);
-      setPaymentModalState('failed');
-    } finally {
-      setLoadingCycle(null);
-      setPhoneSheetOpen(false);
-      setPendingCycle(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const openPortal = async () => {
+    setPortalLoading(true);
+    setErrorMsg(null);
+    const res = await createCustomerPortalSession();
+    if (res.ok) {
+      window.location.assign(res.url);
+      return;
     }
-  };
-
-  const handlePhoneCancel = () => {
-    setPhoneSheetOpen(false);
-    setPendingCycle(null);
+    setErrorMsg(res.message);
+    setPortalLoading(false);
   };
 
   const handlePrintReceipt = (order: Order) => {
@@ -249,7 +153,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
           <div style="font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
             <strong>Order Reference:</strong> ${order.cf_order_id}<br/>
             <strong>Subscription Plan:</strong> TheCore Pro (${order.billing_cycle === 'year' ? '12 Months' : '1 Month'})<br/>
-            <strong>Payment Method:</strong> Cashfree Payments (INR)
+            <strong>Payment Method:</strong> ${order.provider === 'polar' ? 'Polar (USD)' : 'Cashfree Payments (INR)'}
           </div>
 
           <table>
@@ -264,13 +168,13 @@ export default function BillingClient({ usage }: BillingClientProps) {
               <tr>
                 <td>TheCore Pro Plan Subscription</td>
                 <td>${order.billing_cycle === 'year' ? 'Annual (365 Days)' : 'Monthly (30 Days)'}</td>
-                <td style="text-align: right;">₹${(order.amount_paise / 100).toFixed(2)}</td>
+                <td style="text-align: right;">${formatMinor(order.amount_paise, order.currency)}</td>
               </tr>
             </tbody>
           </table>
 
           <div class="total">
-            Total Paid: ₹${(order.amount_paise / 100).toFixed(2)}
+            Total Paid: ${formatMinor(order.amount_paise, order.currency)}
           </div>
 
           <div class="footer" style="margin-top: 40px;">
@@ -354,70 +258,24 @@ export default function BillingClient({ usage }: BillingClientProps) {
                   <p className="text-[15px] text-[var(--text-secondary)]">
                     {isPro ? 'Unlimited Pro' : 'Free Tier'}
                   </p>
-                  {/* Show payment provider info for Pro users */}
-                  {isPro && usage.orders.length > 0 && (
-                    <div className="text-[13px] text-[var(--text-secondary)] mt-2">
-                      {usage.orders.slice(-1)[0]?.currency === 'USD' ? (
-                        <>
-                          <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-green-500" />
-                            <span>Polar (USD)</span>
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            <span>Cashfree (INR)</span>
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Manage subscription button for Polar users */}
-                  {isPro && usage.orders.length > 0 && usage.orders.slice(-1)[0]?.currency === 'USD' && (
-                    <div className="mt-4">
-                      <button
-                        onClick={async () => {
-                          try {
-                            // Get the latest Polar order to get the customer ID
-                            const latestOrder = usage.orders.slice(-1)[0];
-                            if (latestOrder) {
-                              // In a real implementation, we would fetch the Polar customer ID from the user's profile
-                              // For now, we'll use the user ID as external_customer_id to find the customer
-                              const { data: profile } = await supabase
-                                .from('profiles')
-                                .select('polar_customer_id')
-                                .eq('id', latestOrder.user_id)
-                                .single();
-
-                              if (profile?.polar_customer_id) {
-                                const { url } = await createCustomerPortalSession(profile.polar_customer_id);
-                                window.open(url, '_blank');
-                              } else {
-                                // Fallback: try to create a portal session using the user ID
-                                // This assumes the external_customer_id in Polar is the user ID
-                                const { url } = await createCustomerPortalSession(latestOrder.user_id);
-                                window.open(url, '_blank');
-                              }
-                            }
-                          } catch (err) {
-                            console.error('Failed to create customer portal session:', err);
-                            alert('Unable to open subscription management portal. Please try again later.');
-                          }
-                        }}
-                        className="w-full flex items-center justify-center px-4 py-2 rounded-[20px] border border-[var(--border-light)] bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition-colors"
-                      >
-                        Manage subscription
-                      </button>
-                    </div>
-                  )}
                 </div>
+
+                {isPro && usage.planProvider === 'polar' && usage.hasPolarCustomer && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={openPortal}
+                      disabled={portalLoading}
+                      className="inline-flex items-center justify-center rounded-full border border-[var(--border-light)] bg-white px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      {portalLoading ? 'Opening…' : 'Manage subscription'}
+                    </button>
+                  </div>
+                )}
 
                 {isPro && usage.plan_expires_at && (
                   <div className="pt-4 border-t border-[var(--border-light)]">
-                    <p className="text-sm text-[var(--text-secondary)] mb-1">Plan Expires</p>
+                    <p className="text-sm text-[var(--text-secondary)] mb-1">{usage.planProvider === 'polar' && !usage.cancelAtPeriodEnd ? 'Renews on' : 'Plan Expires'}</p>
                     <p className="text-base font-semibold text-[var(--text-primary)]">
                       {new Date(usage.plan_expires_at).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -475,6 +333,10 @@ export default function BillingClient({ usage }: BillingClientProps) {
             {isPro ? 'Extend Subscription' : 'Upgrade to Pro'}
           </h2>
 
+          <div className="text-center">
+            <CurrencySwitch value={currency} onChange={setCurrency} allowInr={allowInr} />
+          </div>
+
           {/* Three-Card Pricing Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
 
@@ -489,7 +351,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
 
               <div className="mb-5">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-[#172B2A]">₹0</span>
+                  <span className="text-4xl font-bold text-[#172B2A]">{formatMoney(0, currency)}</span>
                   <span className="text-sm text-[#647570]">/forever</span>
                 </div>
               </div>
@@ -505,26 +367,26 @@ export default function BillingClient({ usage }: BillingClientProps) {
             <PricingCard
               name="Pro Annual"
               description="Best value with yearly billing and full Pro access"
-              price={proYearPrice}
+              price={formatMoney(proYearPrice, currency)}
               period="/year"
               features={proFeatures.slice(0, 4)}
               badge="Recommended"
               isFeatured
-              ctaLabel={isPro ? `Extend for ₹${proYearPrice}` : `Upgrade for ₹${proYearPrice}/year`}
+              ctaLabel={isPro ? `Extend for ${formatMoney(proYearPrice, currency)}` : `Upgrade for ${formatMoney(proYearPrice, currency)}/year`}
               ctaAction={() => handleCheckout('year')}
               ctaLoading={loadingCycle === 'year'}
               ctaDisabled={loadingCycle !== null}
-              secondaryLabel={`~₹${Math.round(proYearPrice / 12)}/month · ${proDiscountLabel}`}
+              secondaryLabel={`~${usd ? '$' : '₹'}${perMonthOfYear}/month · ${proDiscountLabel}`}
             />
 
             {/* Pro Monthly */}
             <PricingCard
               name="Pro Monthly"
               description="Flexible monthly subscription with same unlimited access"
-              price={proMonthPrice}
+              price={formatMoney(proMonthPrice, currency)}
               period="/month"
               features={proFeatures.slice(0, 4)}
-              ctaLabel={isPro ? `Extend for ₹${proMonthPrice}` : `Upgrade for ₹${proMonthPrice}/month`}
+              ctaLabel={isPro ? `Extend for ${formatMoney(proMonthPrice, currency)}` : `Upgrade for ${formatMoney(proMonthPrice, currency)}/month`}
               ctaAction={() => handleCheckout('month')}
               ctaLoading={loadingCycle === 'month'}
               ctaDisabled={loadingCycle !== null}
@@ -535,10 +397,10 @@ export default function BillingClient({ usage }: BillingClientProps) {
 
           <div className="text-center space-y-1">
             <p className="text-sm text-[var(--text-secondary)]">
-              Secure checkout powered by Cashfree Payments
+              {usd ? 'Secure checkout powered by Polar (merchant of record)' : 'Secure checkout powered by Cashfree Payments'}
             </p>
             <p className="text-xs text-[var(--text-tertiary)]">
-              UPI, cards, and NetBanking supported
+              {usd ? 'Cards and local payment methods supported · taxes added at checkout where applicable' : 'UPI, cards, and NetBanking supported'} · 7-day refund on annual plans (see Refund Policy)
             </p>
           </div>
         </section>
@@ -604,7 +466,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
                           {order.billing_cycle === 'year' ? '12 Months' : '1 Month'}
                         </td>
                         <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">
-                          ₹{(order.amount_paise / 100).toFixed(2)}
+                          {formatMinor(order.amount_paise, order.currency)}
                         </td>
                         <td className="px-6 py-4">
                           <span
@@ -619,7 +481,7 @@ export default function BillingClient({ usage }: BillingClientProps) {
                             <span className={`w-1.5 h-1.5 rounded-full ${
                               order.status === 'paid' ? 'bg-emerald-600' : order.status === 'created' ? 'bg-amber-600' : 'bg-red-600'
                             }`} />
-                            {order.status === 'paid' ? 'Paid' : order.status === 'created' ? 'Pending' : 'Failed'}
+                            {order.status === 'paid' ? 'Paid' : order.status === 'created' ? 'Pending' : order.status === 'refunded' ? 'Refunded' : order.status === 'partially_refunded' ? 'Part-refunded' : 'Failed'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -647,6 +509,17 @@ export default function BillingClient({ usage }: BillingClientProps) {
       </div>
 
       {/* Payment Status Modal */}
+      {phonePromptCycle && (
+        <PhonePrompt
+          onCancel={() => setPhonePromptCycle(null)}
+          onSubmit={(phone) => {
+            const c = phonePromptCycle;
+            setPhonePromptCycle(null);
+            void handleCheckout(c, phone);
+          }}
+        />
+      )}
+
       {paymentModalState && (
         <PaymentStatusModal
           isOpen={true}
@@ -657,15 +530,6 @@ export default function BillingClient({ usage }: BillingClientProps) {
           }}
           onSecondaryClick={() => setPaymentModalState(null)}
           onClose={() => setPaymentModalState(null)}
-        />
-      )}
-
-      {phoneSheetOpen && (
-        <PhoneInputSheet
-          isOpen={phoneSheetOpen}
-          onOpenChange={setPhoneSheetOpen}
-          onContinue={handlePhoneContinue}
-          onCancel={handlePhoneCancel}
         />
       )}
     </div>

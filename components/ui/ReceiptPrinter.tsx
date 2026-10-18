@@ -395,7 +395,9 @@ export const ReceiptPrinter = {
 
 export interface ReceiptTicketData {
   orderId?: string;
-  amountInRupees?: number;
+  /** Pre-formatted amount including currency symbol, e.g. ₹99.00 or $5.00 */
+  amountText?: string;
+  provider?: 'cashfree' | 'polar';
   dateStr?: string;
   customerName?: string;
   planName?: string;
@@ -408,7 +410,7 @@ export function ReceiptTicketTemplate({
   data?: ReceiptTicketData;
 }) {
   const orderId = data?.orderId || '0120034399434';
-  const amount = data?.amountInRupees ? `₹${data.amountInRupees.toFixed(2)}` : '₹99.00';
+  const amount = data?.amountText || '—';
   const dateStr = data?.dateStr || new Date().toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -482,7 +484,7 @@ export function ReceiptTicketTemplate({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-xs font-bold text-slate-900 truncate">{customerName}</div>
-            <div className="text-[10px] text-slate-400 font-medium truncate">{planName} • Paid via Cashfree</div>
+            <div className="text-[10px] text-slate-400 font-medium truncate">{planName} • Paid via {data?.provider === 'polar' ? 'Polar' : 'Cashfree'}</div>
           </div>
         </div>
       </div>

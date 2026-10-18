@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Filter, Loader2, StickyNote } from 'lucide-react';
 import LoadingOrb from '@/components/ui/LoadingOrb';
 import { getAdminPayments, markOrderRefundNote } from '../actions';
+import { formatMinor } from '@/lib/currency';
 
 type AdminPaymentItem = Awaited<ReturnType<typeof getAdminPayments>>['orders'][number];
 
@@ -51,7 +52,7 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Payments & Orders</h1>
           <p className="text-sm text-[var(--text-content-secondary)] mt-1">
-            Cashfree transaction records, checkout orders, and refund notes ({count} total).
+            Cashfree (INR) and Polar (USD) transaction records, checkout orders, and refund notes ({count} total).
           </p>
         </div>
 
@@ -86,7 +87,7 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[var(--separator)] bg-[var(--bg-grouped)] text-[var(--text-content-secondary)]">
-                  <th className="py-3 px-4 font-semibold">Cashfree Order ID</th>
+                  <th className="py-3 px-4 font-semibold">Order Ref</th>
                   <th className="py-3 px-4 font-semibold">User</th>
                   <th className="py-3 px-4 font-semibold">Plan Cycle</th>
                   <th className="py-3 px-4 font-semibold">Amount</th>
@@ -130,7 +131,7 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
                       {o.billing_cycle === 'year' ? '12 Months' : '1 Month'}
                     </td>
                     <td className="py-3 px-4 font-bold">
-                      ₹{(o.amount_paise / 100).toFixed(2)}
+                      {formatMinor(o.amount_paise, o.currency)}
                     </td>
                     <td className="py-3 px-4">
                       <span

@@ -57,14 +57,14 @@ export default function RefundPolicyPage() {
               <div className="p-4 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
                 <h3 className="text-base font-semibold mb-1">Annual Subscriptions (12 Months)</h3>
                 <p className="text-sm text-[var(--text-content-secondary)]">
-                  Refund eligibility is subject to TheCore's Refund & Cancellation Policy. Please contact support for refund inquiries.
+                  We offer a <strong>7-day refund window</strong> from the date of initial purchase for 12-month plans. If you are not satisfied with TheCore Pro within 7 days of payment, you may contact support for a full refund minus any payment gateway processing charges. This applies to payments in INR (Cashfree) and in USD (Polar) alike.
                 </p>
               </div>
 
               <div className="p-4 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)]">
                 <h3 className="text-base font-semibold mb-1">Monthly Subscriptions (1 Month)</h3>
                 <p className="text-sm text-[var(--text-content-secondary)]">
-                  Because monthly subscriptions provide short-term, instant full access to our unlimited tiers at nominal cost (₹99), monthly payments are generally non-refundable once the billing period has begun. In cases of accidental duplicate charges or technical billing errors, exceptions are promptly granted.
+                  Because monthly subscriptions provide short-term, instant full access to our unlimited tiers at nominal cost, monthly payments are generally non-refundable once the billing period has begun. In cases of accidental duplicate charges or technical billing errors, exceptions are promptly granted.
                 </p>
               </div>
             </div>
@@ -77,11 +77,11 @@ export default function RefundPolicyPage() {
             </p>
             <ol className="list-decimal pl-5 text-sm text-[var(--text-content-secondary)] space-y-2 mb-4">
               <li>Send an email to <a href="mailto:support@opsyl.in" className="text-blue-500 hover:underline">support@opsyl.in</a> or submit an inquiry through our <Link href="/contact" className="text-blue-500 hover:underline">Contact page</Link>.</li>
-              <li>Include your registered email address and the Cashfree Order ID or transaction reference number.</li>
+              <li>Include your registered email address and the order reference (starts with core_) or the payment receipt number.</li>
               <li>State the reason for your refund request.</li>
             </ol>
             <p className="text-sm leading-relaxed text-[var(--text-content-secondary)]">
-              Eligible refunds are reviewed within 2 business days and credited to the original payment source within 5 to 7 business days as per banking standards.
+              Eligible refunds are reviewed within 2 business days and credited to the original payment source within 5 to 7 business days as per banking standards. International (USD) payments are processed by Polar as merchant of record; a refund returns the amount to your card in USD, and your bank may apply its own currency conversion. A full refund ends your Pro access and stops any renewal. A partial refund does not end your access. USD subscriptions renew automatically until cancelled from Billing, then Manage subscription; cancelling stops future charges and keeps access until the end of the paid period.
             </p>
           </section>
 

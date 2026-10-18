@@ -1,5 +1,7 @@
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
+import { currencyFromCountry, isProviderAllowed } from '@/lib/currency';
 import { getUserPlanAndUsage } from '@/app/dashboard/actions';
 import PricingClient from './PricingClient';
 
@@ -9,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function PricingPage() {
+  const country = (await headers()).get('x-vercel-ip-country');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -34,6 +37,8 @@ export default async function PricingPage() {
       isPro={Boolean(userPlan?.isPro)}
       planExpiresAt={userPlan?.plan_expires_at || null}
       planConfigs={(planConfigs || []) as any[]}
+      initialCurrency={currencyFromCountry(country)}
+      allowInr={isProviderAllowed(country, 'cashfree')}
     />
   );
 }

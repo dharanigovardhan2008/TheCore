@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { getUserPlanAndUsage } from '@/app/dashboard/actions';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { currencyFromCountry, isProviderAllowed } from '@/lib/currency';
 import BillingClient from './BillingClient';
 
 export const metadata: Metadata = {
@@ -15,6 +17,13 @@ export default async function BillingSettingsPage() {
     redirect('/login?next=/dashboard/settings/billing');
   }
 
-  return <BillingClient usage={usage} />;
+  const country = (await headers()).get('x-vercel-ip-country');
+  return (
+    <BillingClient
+      usage={usage}
+      initialCurrency={currencyFromCountry(country)}
+      allowInr={isProviderAllowed(country, 'cashfree')}
+    />
+  );
 }
 

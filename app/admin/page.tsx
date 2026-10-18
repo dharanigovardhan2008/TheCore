@@ -1,6 +1,7 @@
 import { getAdminOverviewStats } from './actions';
 import { Users, UserPlus, Zap, IndianRupee, FolderGit2, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { formatMinor } from '@/lib/currency';
 
 export default async function AdminOverviewPage() {
   const stats = await getAdminOverviewStats();
@@ -24,8 +25,8 @@ export default async function AdminOverviewPage() {
     },
     {
       label: 'Revenue (This Month)',
-      value: `₹${stats.revenueThisMonthRupees}`,
-      sub: 'Cashfree paid orders',
+      value: `₹${stats.revenueThisMonthInr} · $${stats.revenueThisMonthUsd.toFixed(2)}`,
+      sub: 'Cashfree (INR) + Polar (USD) paid orders',
       icon: IndianRupee,
       color: 'text-emerald-500',
       bg: 'bg-emerald-500/10',
@@ -123,7 +124,7 @@ export default async function AdminOverviewPage() {
         <div className="p-6 rounded-2xl bg-[var(--bg-surface)] border border-[var(--separator)] shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold flex items-center gap-2">
-              <IndianRupee className="w-4 h-4 text-emerald-500" /> Recent Cashfree Orders
+              <IndianRupee className="w-4 h-4 text-emerald-500" /> Recent Orders
             </h2>
             <Link
               href="/admin/payments"
@@ -148,7 +149,7 @@ export default async function AdminOverviewPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold">₹{(o.amount_paise / 100).toFixed(2)}</div>
+                    <div className="font-bold">{formatMinor(o.amount_paise, o.currency)}</div>
                     <span
                       className={`inline-block px-1.5 py-0.2 rounded-full text-[10px] font-semibold capitalize mt-0.5 ${
                         o.status === 'paid'

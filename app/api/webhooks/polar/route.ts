@@ -1,245 +1,218 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { webhooks } from '@polar-sh/sdk/2026-10';
-const { validateEvent } = webhooks;
-import { createAdminClient } from '@/utils/supabase/admin';
-import { type BillingCycle } from '@/lib/plans';
+import { createAdminClient, hasServiceRoleKey } from '@/utils/supabase/admin';
+import {
+  parsePolarWebhook,
+  polarWebhooks,
+  cycleFromPolarProductId,
+  getPolarClient,
+  revokePolarSubscription,
+} from '@/lib/polar';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+type AdminDb = ReturnType<typeof createAdminClient>;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Resolve our user ID from the Polar customer (external_id is set to our user ID at checkout). */
+function resolveUserId(data: {
+  customer?: { external_id?: string | null } | null;
+  metadata?: Record<string, unknown> | null;
+}): string | null {
+  const fromCustomer = data.customer?.external_id;
+  if (fromCustomer && UUID_RE.test(fromCustomer)) return fromCustomer;
+  const fromMeta = data.metadata?.user_id;
+  if (typeof fromMeta === 'string' && UUID_RE.test(fromMeta)) return fromMeta;
+  return null;
+}
+
+async function handleOrderPaid(adminDb: AdminDb, order: any): Promise<string> {
+  const cycle = cycleFromPolarProductId(order.product_id ?? order.product?.id);
+  if (!cycle) return 'ignored: not a TheCore product';
+
+  const userId = resolveUserId(order);
+  if (!userId) {
+    console.error('[Polar webhook] order.paid without a resolvable user', order.id);
+    return 'ignored: no user';
+  }
+
+  // First purchase: we created the order row at checkout and passed its reference in metadata.
+  let orderRef: string | null = typeof order.metadata?.order_ref === 'string' ? order.metadata.order_ref : null;
+  if (!orderRef && order.checkout_id) {
+    const { data } = await adminDb
+      .from('orders')
+      .select('cf_order_id')
+      .eq('provider', 'polar')
+      .eq('provider_checkout_id', order.checkout_id)
+      .maybeSingle();
+    orderRef = data?.cf_order_id ?? null;
+  }
+  // Renewal (no checkout of ours): a deterministic reference keeps retries idempotent.
+  if (!orderRef) orderRef = `core_renew_${order.id}`;
+
+  // End of the period just paid for (authoritative, from the subscription).
+  let periodEnd: string | null = null;
+  const subscriptionId: string | null = order.subscription_id ?? order.subscription?.id ?? null;
+  if (subscriptionId) {
+    try {
+      const sub = await getPolarClient().subscriptions.get(subscriptionId);
+      periodEnd = sub.current_period_end ? new Date(sub.current_period_end as unknown as string).toISOString() : null;
+    } catch (err) {
+      console.warn('[Polar webhook] could not load subscription', subscriptionId, (err as Error)?.message);
+    }
+  }
+
+  const paidAmount: number = order.net_amount ?? order.subtotal_amount ?? order.amount;
+  const { data: result, error } = await adminDb.rpc('fulfill_payment', {
+    p_provider: 'polar',
+    p_order_ref: orderRef,
+    p_provider_order_id: order.id,
+    p_user_id: userId,
+    p_billing_cycle: cycle,
+    p_paid_amount: paidAmount,
+    p_currency: String(order.currency || '').toUpperCase(),
+    p_period_end: periodEnd,
+    p_subscription_id: subscriptionId,
+    p_customer_id: order.customer_id ?? order.customer?.id ?? null,
+  });
+  if (error) throw new Error(`fulfill_payment failed: ${error.message}`);
+
+  if (result === 'mismatch') {
+    console.error('[Polar webhook] AMOUNT MISMATCH - Pro NOT granted', { orderRef, polarOrderId: order.id, paidAmount });
+  }
+  if (result === 'not_found') {
+    throw new Error(`fulfill_payment: order not found for ${orderRef}`);
+  }
+  return String(result);
+}
+
+async function handleOrderRefunded(adminDb: AdminDb, order: any): Promise<string> {
+  const cycle = cycleFromPolarProductId(order.product_id ?? order.product?.id);
+  if (!cycle) return 'ignored: not a TheCore product';
+
+  const isFull = order.status === 'refunded';
+  const { data: result, error } = await adminDb.rpc('refund_payment', {
+    p_provider: 'polar',
+    p_order_ref: typeof order.metadata?.order_ref === 'string' ? order.metadata.order_ref : null,
+    p_provider_order_id: order.id,
+    p_refunded_total: Number(order.refunded_amount ?? 0),
+    p_is_full: isFull,
+  });
+  if (error) throw new Error(`refund_payment failed: ${error.message}`);
+
+  // Full refund: also stop the subscription so the customer is not charged again.
+  const subscriptionId: string | null = order.subscription_id ?? order.subscription?.id ?? null;
+  if (result === 'revoked' && subscriptionId) {
+    await revokePolarSubscription(subscriptionId);
+  }
+  return String(result);
+}
+
+async function handleSubscription(adminDb: AdminDb, type: string, sub: any): Promise<string> {
+  const cycle = cycleFromPolarProductId(sub.product_id ?? sub.product?.id);
+  if (!cycle) return 'ignored: not a TheCore product';
+
+  const userId = resolveUserId(sub);
+  if (!userId) return 'ignored: no user';
+
+  const revoke = type === 'subscription.revoked';
+  const { data: result, error } = await adminDb.rpc('apply_polar_subscription_state', {
+    p_user_id: userId,
+    p_subscription_id: sub.id,
+    p_status: String(sub.status ?? type.replace('subscription.', '')),
+    p_cancel_at_period_end: Boolean(sub.cancel_at_period_end),
+    p_event_at: new Date(sub.modified_at ?? sub.canceled_at ?? Date.now()).toISOString(),
+    p_revoke: revoke,
+  });
+  if (error) throw new Error(`apply_polar_subscription_state failed: ${error.message}`);
+  return String(result);
+}
 
 export async function POST(req: NextRequest) {
+  if (!hasServiceRoleKey()) {
+    console.error('[Polar webhook] SUPABASE_SERVICE_ROLE_KEY is not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
+  // 1. Verify the signature using the RAW body.
+  const rawBody = await req.text();
+  let event: Awaited<ReturnType<typeof parsePolarWebhook>>;
   try {
-    const rawBody = await req.text();
-    const signature = req.headers.get('x-polar-signature') || req.headers.get('polar-webhook-signature');
-
-    // For local development, we might not have a secret set
-    const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
-
-    // 1. Verify webhook signature if secret is configured
-    if (webhookSecret) {
-      try {
-        const event = validateEvent(rawBody, {
-          'polar-webhook-signature': signature || '',
-        }, webhookSecret);
-
-        // If validation fails, validateEvent will throw
-        // We'll use the validated event from here
-      } catch (verificationError) {
-        console.warn('Polar webhook signature verification failed:', verificationError);
-        return NextResponse.json(
-          { error: 'Invalid webhook signature' },
-          { status: 400 }
-        );
-      }
+    event = await parsePolarWebhook(rawBody, req.headers);
+  } catch (err) {
+    if (err instanceof polarWebhooks.PolarWebhookVerificationError) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
     }
-
-    let payload: Record<string, unknown>;
-    try {
-      payload = JSON.parse(rawBody);
-    } catch {
-      return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 });
+    if (err instanceof polarWebhooks.PolarWebhookUnknownTypeError) {
+      return NextResponse.json({ received: true, ignored: 'unknown event type' }, { status: 200 });
     }
+    if (err instanceof polarWebhooks.PolarWebhookError) {
+      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    }
+    console.error('[Polar webhook] verification error:', (err as Error)?.message);
+    return NextResponse.json({ error: 'Webhook verification failed' }, { status: 500 });
+  }
 
-    const eventType = payload.type as string;
-    const data = payload.data as Record<string, unknown> | undefined;
+  const adminDb = createAdminClient();
+  const webhookId = req.headers.get('webhook-id') || '';
+  const data = event.data as any;
 
-    // 2. Log the webhook event for idempotency (using webhook_id from Polar)
-    const webhookId = payload.id as string || `${eventType}-${Date.now()}`;
-    const adminDb = createAdminClient();
-
-    // 3. Idempotent check: Insert into polar_webhook_events with unique webhook_id
-    const { error: eventError } = await adminDb.from('polar_webhook_events').insert({
+  try {
+    // 2. Idempotency: one row per webhook-id. Already processed -> acknowledge and stop.
+    const { error: insertError } = await adminDb.from('polar_webhook_events').insert({
       webhook_id: webhookId,
-      event_type: eventType,
-      payload: payload,
+      event_type: event.type,
+      payload: { type: event.type, id: data?.id, product_id: data?.product_id, status: data?.status },
     });
-
-    if (eventError) {
-      // Postgres error code 23505 indicates duplicate key violation -> already handled!
-      if (eventError.code === '23505' || eventError.message?.includes('duplicate key')) {
-        return NextResponse.json({ message: 'Event already processed' }, { status: 200 });
+    if (insertError) {
+      if (insertError.code === '23505') {
+        const { data: existing } = await adminDb
+          .from('polar_webhook_events')
+          .select('processed_at')
+          .eq('webhook_id', webhookId)
+          .maybeSingle();
+        if (existing?.processed_at) {
+          return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
+        }
+        // Earlier attempt failed before finishing: process again (handlers are idempotent).
+      } else {
+        throw new Error(`could not record webhook: ${insertError.message}`);
       }
-      console.error('Error logging polar webhook event:', eventError.message);
     }
 
-    // 4. Handle specific events according to instructions
-    // Only order.paid grants Pro via fulfill_payment
-    // Subscription events only update state via apply_polar_subscription_state
-
-    if (eventType === 'order.paid') {
-      // Handle order paid - grant Pro via fulfill_payment RPC
-      const orderRef = data?.order_ref as string;
-      const subscriptionId = data?.subscription_id as string || null;
-      const customerId = data?.customer_id as string;
-      const amount = data?.amount as number; // amount in cents (USD)
-      const currency = data?.currency as string || 'USD';
-      const cycle = data?.interval as BillingCycle || 'month'; // Assuming interval field
-
-      if (!orderRef || !customerId) {
-        console.warn('Missing required fields in order.paid event:', { orderRef, customerId });
-        return NextResponse.json({ message: 'Missing required fields' }, { status: 200 });
-      }
-
-      // Verify amount matches our plan config
-      let expectedAmountCents: number | null = null;
-      try {
-        const { data: planConfig } = await adminDb
-          .from('plan_configs')
-          .select(`price_month_usd, price_year_usd`)
-          .eq('id', 'pro')
-          .single();
-
-        if (planConfig) {
-          expectedAmountCents = cycle === 'year'
-            ? Math.round((planConfig.price_year_usd ?? 0) * 100)
-            : Math.round((planConfig.price_month_usd ?? 0) * 100);
-        }
-      } catch (err) {
-        console.error('Failed to fetch plan config for amount verification:', err);
-      }
-
-      if (expectedAmountCents !== null && amount !== expectedAmountCents) {
-        console.error('Polar order amount mismatch:', {
-          received: amount,
-          expected: expectedAmountCents,
-          orderRef
-        });
-        // Still process the event but log the mismatch - could be a pricing update
-        // For security, we might want to reject, but let's continue for now
-      }
-
-      // Use RPC fulfill_payment function (service_role only)
-      try {
-        const { error: fulfillError } = await adminDb.rpc('fulfill_payment', {
-          p_provider: 'polar',
-          p_order_ref: orderRef,
-          p_provider_order_id: subscriptionId || '', // Polar subscription ID as provider_order_id
-          p_user_id: customerId, // external_customer_id is the user.id
-          p_billing_cycle: cycle,
-          p_paid_amount: amount, // amount in cents
-          p_currency: currency,
-          p_period_end: null,
-          p_subscription_id: subscriptionId || null,
-          p_customer_id: customerId,
-        });
-
-        if (fulfillError) {
-          console.error('Fulfill payment RPC failed:', fulfillError);
-          // Fallback to manual update if RPC fails
-          await adminDb.from('orders').update({
-            status: 'paid',
-            paid_at: new Date().toISOString(),
-          }).eq('cf_order_id', orderRef);
-
-          // Fetch user's profile and extend Pro plan
-          const { data: profile } = await adminDb
-            .from('profiles')
-            .select('plan, plan_expires_at')
-            .eq('id', customerId)
-            .single();
-
-          if (profile) {
-            const { calculateNewExpiry } = await import('@/lib/plans');
-            const newExpiry = calculateNewExpiry(
-              profile?.plan_expires_at,
-              cycle as BillingCycle
-            );
-
-            await adminDb.from('profiles').update({
-              plan: 'pro',
-              plan_expires_at: newExpiry.toISOString(),
-              plan_provider: 'polar',
-            }).eq('id', customerId);
-          }
-        }
-      } catch (rpcErr) {
-        console.error('Fulfill payment RPC invocation error:', rpcErr);
-        // Fallback to manual update
-        await adminDb.from('orders').update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-        }).eq('cf_order_id', orderRef);
-
-        // Fetch user's profile and extend Pro plan
-        const { data: profile } = await adminDb
-          .from('profiles')
-          .select('plan, plan_expires_at')
-          .eq('id', customerId)
-          .single();
-
-        if (profile) {
-          const { calculateNewExpiry } = await import('@/lib/plans');
-          const newExpiry = calculateNewExpiry(
-            profile?.plan_expires_at,
-            cycle as BillingCycle
-          );
-
-          await adminDb.from('profiles').update({
-            plan: 'pro',
-            plan_expires_at: newExpiry.toISOString(),
-            plan_provider: 'polar',
-          }).eq('id', customerId);
-        }
-      }
-    }
-    // Handle subscription events - only update state via apply_polar_subscription_state
-    else if (
-      eventType === 'subscription.active' ||
-      eventType === 'subscription.canceled' ||
-      eventType === 'subscription.created' ||
-      eventType === 'subscription.cycled' ||
-      eventType === 'subscription.past_due' ||
-      eventType === 'subscription.paused' ||
-      eventType === 'subscription.resumed' ||
-      eventType === 'subscription.revoked' ||
-      eventType === 'subscription.uncanceled' ||
-      eventType === 'subscription.updated'
-    ) {
-      // Extract subscription data
-      const subscriptionId = data?.id as string;
-      const customerId = data?.customer_id as string;
-      const status = data?.status as string;
-      const cancelAtPeriodEnd = data?.cancel_at_period_end as boolean || false;
-      const currentPeriodEnd = data?.current_period_end as string || null;
-      const interval = data?.interval as BillingCycle || 'month';
-
-      if (!subscriptionId || !customerId) {
-        console.warn('Missing required fields in subscription event:', { subscriptionId, customerId });
-        return NextResponse.json({ message: 'Missing required fields' }, { status: 200 });
-      }
-
-      // Determine if this is a revoke event (subscription.canceled or subscription.revoked)
-      const isRevoke = eventType === 'subscription.canceled' || eventType === 'subscription.revoked';
-
-      // Use RPC apply_polar_subscription_state function (service_role only)
-      try {
-        const { error: stateError } = await adminDb.rpc('apply_polar_subscription_state', {
-          p_user_id: customerId,
-          p_subscription_id: subscriptionId,
-          p_status: status,
-          p_cancel_at_period_end: cancelAtPeriodEnd,
-          p_event_at: new Date().toISOString(),
-          p_revoke: isRevoke,
-          p_customer_id: customerId,
-        });
-
-        if (stateError) {
-          console.error('Apply polar subscription state RPC failed:', stateError);
-          // We still return 200 to prevent retries, but log the error
-        }
-      } catch (rpcErr) {
-        console.error('Apply polar subscription state RPC invocation error:', rpcErr);
-        // Still return 200 to prevent retries
-      }
-    }
-    // Ignore other events (like order.created, order.refunded, etc.)
-    else {
-      // Log unhandled event types for monitoring
-      console.info('Unhandled Polar webhook event type:', eventType);
+    // 3. Act only on events for our own products; everything else is ignored.
+    let outcome = 'ignored';
+    switch (event.type) {
+      case 'order.paid':
+        outcome = await handleOrderPaid(adminDb, data);
+        break;
+      case 'order.refunded':
+        outcome = await handleOrderRefunded(adminDb, data);
+        break;
+      case 'subscription.active':
+      case 'subscription.canceled':
+      case 'subscription.uncanceled':
+      case 'subscription.past_due':
+      case 'subscription.revoked':
+      case 'subscription.updated':
+        outcome = await handleSubscription(adminDb, event.type, data);
+        break;
+      default:
+        outcome = 'ignored: unhandled event';
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error: unknown) {
-    console.error('Unhandled polar webhook exception:', (error as Error)?.message || error);
+    await adminDb
+      .from('polar_webhook_events')
+      .update({ processed_at: new Date().toISOString() })
+      .eq('webhook_id', webhookId);
+
+    console.log(`[Polar webhook] ${event.type} -> ${outcome}`);
+    return NextResponse.json({ received: true, outcome }, { status: 200 });
+  } catch (err) {
+    console.error('[Polar webhook] processing error:', (err as Error)?.message);
+    // 500 makes Polar retry later.
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }

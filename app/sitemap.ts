@@ -1,7 +1,9 @@
+import { getSiteUrlForMetadata } from '@/lib/site-url';
 import { MetadataRoute } from 'next';
-import { siteUrl } from '@/lib/site-url';
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const siteUrl = getSiteUrlForMetadata();
+
   const routes = [
     '',
     '/login',

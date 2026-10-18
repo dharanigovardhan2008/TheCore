@@ -1,209 +1,129 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyCashfreeWebhookSignature, fetchCashfreeOrder } from '@/lib/cashfree';
-import { createAdminClient } from '@/utils/supabase/admin';
-import { calculateNewExpiry, type BillingCycle } from '@/lib/plans';
+import { verifyCashfreeWebhookSignature, fetchCashfreeOrder, fetchCashfreeRefunds } from '@/lib/cashfree';
+import { createAdminClient, hasServiceRoleKey } from '@/utils/supabase/admin';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
+/**
+ * Cashfree (India, INR) webhook.
+ * Shared Cashfree account: every product passes its own notify_url and uses its own order prefix,
+ * so this route only acts on orders that exist in THIS app's database.
+ */
 export async function POST(req: NextRequest) {
-  try {
-    const rawBody = await req.text();
-    const signature = req.headers.get('x-webhook-signature');
-    const timestamp = req.headers.get('x-webhook-timestamp');
+  if (!hasServiceRoleKey()) {
+    console.error('[Cashfree webhook] SUPABASE_SERVICE_ROLE_KEY is not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
 
-    // 1. Verify webhook signature and timestamp (reject invalid or expired requests)
+  try {
+    // 1. Signature over the RAW body + timestamp freshness.
+    const rawBody = await req.text();
     const verification = verifyCashfreeWebhookSignature({
       rawBody,
-      signature,
-      timestamp,
-      maxAgeSeconds: 300, // 5 minutes tolerance
+      signature: req.headers.get('x-webhook-signature'),
+      timestamp: req.headers.get('x-webhook-timestamp'),
+      maxAgeSeconds: 300,
     });
-
     if (!verification.isValid) {
-      console.warn('Cashfree webhook signature rejected:', verification.reason);
-      return NextResponse.json(
-        { error: 'Invalid or expired webhook signature', reason: verification.reason },
-        { status: 400 }
-      );
+      console.warn('[Cashfree webhook] signature rejected:', verification.reason);
+      return NextResponse.json({ error: 'Invalid or expired webhook signature' }, { status: 400 });
     }
 
-    let payload: Record<string, unknown>;
+    let payload: Record<string, any>;
     try {
       payload = JSON.parse(rawBody);
     } catch {
       return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 });
     }
 
-    const eventType = ((payload.type || payload.event_type || 'PAYMENT_EVENT') as string);
-    const payloadData = payload.data as Record<string, unknown> | undefined;
-    const orderObj = payloadData?.order as Record<string, unknown> | undefined;
-    const paymentObj = payloadData?.payment as Record<string, unknown> | undefined;
-    const orderId =
-      (orderObj?.order_id as string) ||
-      (payload.order_id as string) ||
-      (payloadData?.order_id as string) ||
-      (orderObj?.cf_order_id as string);
-
+    const eventType: string = payload.type || payload.event_type || 'UNKNOWN';
+    const data = payload.data as Record<string, any> | undefined;
+    const orderId: string | undefined =
+      data?.order?.order_id || data?.refund?.order_id || data?.order_id || payload.order_id;
     if (!orderId) {
       return NextResponse.json({ error: 'Missing order_id in webhook payload' }, { status: 400 });
     }
 
     const adminDb = createAdminClient();
 
-    // 2. Sanitize payload before storing (Never log or store sensitive customer auth or secret keys)
-    const sanitizedPayload = {
-      type: eventType,
-      order_id: orderId,
-      order_amount: orderObj?.order_amount,
-      order_status: orderObj?.order_status,
-      payment_status: paymentObj?.payment_status,
-      event_time: payload.event_time,
-    };
+    // 2. Audit log only (never a gate): duplicates are ignored, processing below is idempotent.
+    await adminDb.from('payment_events').upsert(
+      {
+        cf_order_id: orderId,
+        event_type: eventType,
+        payload: {
+          type: eventType,
+          order_id: orderId,
+          order_amount: data?.order?.order_amount,
+          order_status: data?.order?.order_status,
+          payment_status: data?.payment?.payment_status,
+          refund_status: data?.refund?.refund_status,
+          event_time: payload.event_time,
+        },
+      },
+      { onConflict: 'cf_order_id,event_type', ignoreDuplicates: true }
+    );
 
-    // 3. Idempotent check: Insert into payment_events with unique (cf_order_id, event_type)
-    const { error: eventError } = await adminDb.from('payment_events').insert({
-      cf_order_id: orderId,
-      event_type: eventType,
-      payload: sanitizedPayload,
-    });
-
-    if (eventError) {
-      // Postgres error code 23505 indicates duplicate key violation -> already handled!
-      if (eventError.code === '23505' || eventError.message?.includes('duplicate key')) {
-        return NextResponse.json({ message: 'Event already processed' }, { status: 200 });
-      }
-      console.error('Error logging payment event:', eventError.message);
+    // 3. Only our own orders (a shared account also delivers other products' events).
+    const { data: dbOrder } = await adminDb
+      .from('orders')
+      .select('id, user_id, status, billing_cycle, amount_paise, currency, cf_order_id')
+      .eq('provider', 'cashfree')
+      .eq('cf_order_id', orderId)
+      .maybeSingle();
+    if (!dbOrder) {
+      return NextResponse.json({ message: 'Order not found in this app' }, { status: 200 });
     }
 
-    // 4. Handle PAYMENT_SUCCESS_WEBHOOK
     if (eventType === 'PAYMENT_SUCCESS_WEBHOOK' || eventType === 'ORDER_PAID_SUCCESS') {
-      // Fetch stored order safely without triggering UUID cast exceptions
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
-      const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
-
-      const { data: dbOrder } = await adminDb
-        .from('orders')
-        .select('*')
-        .or(orderFilter)
-        .maybeSingle();
-
-      if (!dbOrder) {
-        console.warn(`Order ${orderId} not found in database for webhook.`);
-        return NextResponse.json({ message: 'Order record not found' }, { status: 200 });
-      }
-
-      // Re-fetch authoritative status from Cashfree API
+      // Never trust the webhook body: confirm the final status with Cashfree.
       const cfOrder = await fetchCashfreeOrder(orderId);
-
-      // Verify amount and currency match
-      const amountPaise = Math.round(Number(cfOrder.order_amount) * 100);
-      const isAmountValid = Math.abs(amountPaise - dbOrder.amount_paise) < 100; // within 1 rupee tolerance
-      const isCurrencyValid = (cfOrder.order_currency || 'INR').toUpperCase() === 'INR';
-      const isPaid = cfOrder.order_status === 'PAID';
-
-      if (isPaid && isAmountValid && isCurrencyValid) {
-        // Use RPC fulfill_payment function (service_role only)
-        const { error: fulfillError } = await adminDb.rpc('fulfill_payment', {
+      if (cfOrder.order_status !== 'PAID') {
+        return NextResponse.json({ message: 'Order not paid yet' }, { status: 200 });
+      }
+      const { data: result, error } = await adminDb.rpc('fulfill_payment', {
+        p_provider: 'cashfree',
+        p_order_ref: dbOrder.cf_order_id,
+        p_provider_order_id: null,
+        p_user_id: dbOrder.user_id,
+        p_billing_cycle: dbOrder.billing_cycle,
+        p_paid_amount: Math.round(Number(cfOrder.order_amount) * 100),
+        p_currency: String(cfOrder.order_currency || '').toUpperCase(),
+      });
+      if (error) throw new Error(`fulfill_payment failed: ${error.message}`);
+      if (result === 'mismatch') {
+        console.error('[Cashfree webhook] AMOUNT MISMATCH - Pro NOT granted', orderId);
+      }
+      console.log(`[Cashfree webhook] ${eventType} ${orderId} -> ${result}`);
+    } else if (eventType === 'REFUND_STATUS_WEBHOOK' || eventType === 'REFUND_SUCCESS_WEBHOOK') {
+      // One webhook = one refund. Use the authoritative TOTAL so a partial refund keeps Pro.
+      const refunds = await fetchCashfreeRefunds(orderId);
+      const refundedMinor = refunds
+        .filter((r) => r.refund_status === 'SUCCESS')
+        .reduce((sum, r) => sum + Math.round(Number(r.refund_amount) * 100), 0);
+      if (refundedMinor > 0) {
+        const { data: result, error } = await adminDb.rpc('refund_payment', {
           p_provider: 'cashfree',
           p_order_ref: dbOrder.cf_order_id,
-          p_provider_order_id: cfOrder.cf_order_id,
-          p_user_id: dbOrder.user_id,
-          p_billing_cycle: dbOrder.billing_cycle,
-          p_paid_amount: dbOrder.amount_paise,
-          p_currency: dbOrder.currency,
-          p_period_end: null,
-          p_subscription_id: null,
-          p_customer_id: dbOrder.user_id.toString(),
+          p_provider_order_id: null,
+          p_refunded_total: refundedMinor,
+          p_is_full: refundedMinor >= dbOrder.amount_paise,
         });
-
-        if (fulfillError) {
-          console.error('Fulfill payment RPC failed:', fulfillError);
-          // Fallback to manual update if RPC fails
-          await adminDb.from('orders').update({
-            status: 'paid',
-            paid_at: new Date().toISOString(),
-          }).eq('id', dbOrder.id);
-
-          // Fetch user's profile and extend Pro plan
-          const { data: profile } = await adminDb
-            .from('profiles')
-            .select('plan, plan_expires_at')
-            .eq('id', dbOrder.user_id)
-            .single();
-
-          const newExpiry = calculateNewExpiry(
-            profile?.plan_expires_at,
-            dbOrder.billing_cycle as BillingCycle
-          );
-
-          await adminDb.from('profiles').update({
-            plan: 'pro',
-            plan_expires_at: newExpiry.toISOString(),
-          }).eq('id', dbOrder.user_id);
-        }
+        if (error) throw new Error(`refund_payment failed: ${error.message}`);
+        console.log(`[Cashfree webhook] ${eventType} ${orderId} -> ${result}`);
       }
-    } else if (eventType === 'REFUND_SUCCESS_WEBHOOK') {
-      // Handle refund: use RPC refund_payment function
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
-      const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
-
-      const { data: dbOrder } = await adminDb
-        .from('orders')
-        .select('*')
-        .or(orderFilter)
-        .maybeSingle();
-
-      if (dbOrder) {
-        // Use RPC refund_payment function (service_role only)
-        const { error: refundError } = await adminDb.rpc('refund_payment', {
-          p_provider: 'cashfree',
-          p_order_ref: dbOrder.cf_order_id,
-          p_provider_order_id: dbOrder.provider_order_id || '',
-          p_refunded_total: dbOrder.amount_paise, // Assuming full refund for now
-          p_is_full: true,
-        });
-
-        if (refundError) {
-          console.error('Refund payment RPC failed:', refundError);
-          // Fallback to manual update if RPC fails
-          await adminDb.from('orders').update({
-            status: 'failed',
-          }).eq('id', dbOrder.id);
-
-          // Downgrade user back to free if refund processed
-          await adminDb.from('profiles').update({
-            plan: 'free',
-            plan_expires_at: null,
-          }).eq('id', dbOrder.user_id);
-        }
-      }
-    } else if (
-      eventType === 'PAYMENT_FAILED_WEBHOOK' ||
-      eventType === 'PAYMENT_USER_DROPPED_WEBHOOK' ||
-      eventType === 'ORDER_TERMINATED_WEBHOOK'
-    ) {
-      // For failed payments, we can still use RPC or manual update
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
-      const orderFilter = isUuid ? `cf_order_id.eq.${orderId},id.eq.${orderId}` : `cf_order_id.eq.${orderId}`;
-
-      const { data: dbOrder } = await adminDb
-        .from('orders')
-        .select('*')
-        .or(orderFilter)
-        .maybeSingle();
-
-      if (dbOrder && dbOrder.status === 'created') {
-        // For failed payments, we'll manually update status since there's no specific RPC for this
-        await adminDb.from('orders').update({
-          status: 'failed',
-        }).eq('id', dbOrder.id);
-      }
+    } else if (eventType === 'ORDER_TERMINATED_WEBHOOK') {
+      // A failed attempt can be retried inside the same order, so only the terminal event closes it,
+      // and only if it is still unpaid.
+      await adminDb.from('orders').update({ status: 'failed' }).eq('id', dbOrder.id).eq('status', 'created');
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
-    console.error('Unhandled webhook exception:', (error as Error)?.message || error);
+    console.error('[Cashfree webhook] processing error:', (error as Error)?.message || error);
+    // 500 makes Cashfree retry.
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }
-

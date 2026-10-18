@@ -29,7 +29,7 @@ const faqs = [
   ['Can you read my .env files?', 'No. They are encrypted in your browser before they are saved. Without your master password, nobody can read them, including us. A lost master password cannot be recovered.'],
   ['Do you store my hosting passwords?', 'Never. TheCore only records which email you used on each platform.'],
   ['Is everything end-to-end encrypted?', 'Only the .env vault is. Project names, platforms, emails and to-dos are stored normally, protected by row-level security.'],
-  ['Does Pro renew automatically?', 'No. Pro is a prepaid pass for 1 or 12 months. You are never charged again unless you buy again.'],
+  ['Does Pro renew automatically?', 'It depends on how you pay. In India (INR via Cashfree), Pro is a prepaid pass for 1 or 12 months and never renews by itself. For international customers (USD via Polar), Pro renews automatically until you cancel it from Billing, and you keep access until the end of the period you paid for.'],
 ]
 const card = 'rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/5'
 const mini = 'mt-5 rounded-2xl bg-slate-50 p-4 text-sm'
@@ -43,7 +43,7 @@ export default async function Home() {
   const country = (await headers()).get('x-vercel-ip-country')
   const prices = {
     monthInr: cfg?.price_month_rupees ?? 99, yearInr: cfg?.price_year_rupees ?? 999,
-    monthUsd: Number(cfg?.price_month_usd) || 2.99, yearUsd: Number(cfg?.price_year_usd) || 29,
+    monthUsd: Number(cfg?.price_month_usd) || 5, yearUsd: Number(cfg?.price_year_usd) || 30,
   }
   const cta = user ? '/dashboard' : '/signup'
   const h2 = 'text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl'
