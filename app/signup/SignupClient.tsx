@@ -178,14 +178,6 @@ export default function SignupClient() {
       return;
     }
 
-    // Dev Mode Bypass
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
-      setEmailVerificationStep('verify');
-      setSuccessMsg('Dev mode: enter 123456 to verify.');
-      setResendCooldown(60);
-      return;
-    }
-
     setLoading(true);
     setErrorMsg(null);
 
@@ -254,15 +246,6 @@ export default function SignupClient() {
       return;
     }
 
-    // Dev Mode Bypass
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
-      if (code === '123456') {
-        setEmailVerificationStep('verified');
-        setSuccessMsg('Email verified successfully! You can now create your account.');
-        return;
-      }
-    }
-
     setVerifyLoading(true);
     setErrorMsg(null);
 
@@ -290,13 +273,6 @@ export default function SignupClient() {
 
     if (emailVerificationStep !== 'verified') {
       await handleSendVerificationCode();
-      return;
-    }
-
-    // Dev Mode Bypass
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
-      setSuccessMsg('Dev Mode: Account created! Redirecting to dashboard...');
-      setTimeout(() => router.push('/dashboard'), 1000);
       return;
     }
 
@@ -382,12 +358,6 @@ export default function SignupClient() {
   const handleGoogleAuth = async () => {
     if (!agreedToTerms) {
       setErrorMsg('You must agree to the Terms of Service and Privacy Policy before continuing');
-      return;
-    }
-
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('mock-project')) {
-      alert('[Dev Mode] Simulating Google Auth success. Going to profile settings!');
-      router.push('/dashboard/settings/profile');
       return;
     }
 

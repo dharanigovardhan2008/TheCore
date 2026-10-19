@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: 'Manage your TheCore Pro subscription, usage limits, and payment history.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function BillingSettingsPage() {
   const usage = await getUserPlanAndUsage();
 

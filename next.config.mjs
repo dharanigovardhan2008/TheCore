@@ -7,7 +7,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://*.cashfree.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://ik.imagekit.io https://*.cashfree.com; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://upload.imagekit.io https://*.cashfree.com https://sandbox.cashfree.com https://api.cashfree.com https://payments-test.cashfree.com https://payments.cashfree.com; frame-src 'self' https://*.cashfree.com https://sandbox.cashfree.com https://api.cashfree.com https://payments-test.cashfree.com https://payments.cashfree.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self';"
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://*.cashfree.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://ik.imagekit.io https://*.cashfree.com; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://upload.imagekit.io https://*.cashfree.com https://sandbox.cashfree.com https://api.cashfree.com https://payments-test.cashfree.com https://payments.cashfree.com; frame-src 'self' https://*.cashfree.com https://sandbox.cashfree.com https://api.cashfree.com https://payments-test.cashfree.com https://payments.cashfree.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';"
           },
           {
             key: 'X-Frame-Options',

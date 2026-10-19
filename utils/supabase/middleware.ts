@@ -7,8 +7,8 @@ export async function updateSession(request: NextRequest) {
   })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-project.supabase.co",
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "mock-anon-key",
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookieOptions: {
         maxAge: 400 * 24 * 60 * 60, // 400 days persistent cookie
@@ -32,11 +32,6 @@ export async function updateSession(request: NextRequest) {
       },
     }
   )
-
-  // Dev-only bypass when no real Supabase project is configured. NEVER active in production.
-  if (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("mock-project")) {
-    return supabaseResponse
-  }
 
   // Refresh auth session
   const {

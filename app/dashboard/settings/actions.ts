@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { redirect } from "next/navigation";
 
 export async function signOut() {
@@ -19,12 +20,15 @@ export async function deleteAccount() {
     throw new Error("Not authenticated");
   }
 
-  // Delete all user data. Ideally, this should cascade, but we manually trigger deletion of projects.
-  await supabase.from("projects").delete().eq("user_id", user.id);
-  
-  // Attempt to delete user via an RPC call if one exists for user deletion
-  await supabase.rpc("delete_user");
-  
+  // The ID comes from the verified session. Deleting the auth user removes the linked data.
+  const adminDb = createAdminClient();
+  await adminDb.from("projects").delete().eq("user_id", user.id);
+  const { error } = await adminDb.auth.admin.deleteUser(user.id);
+  if (error) {
+    console.error("[Account] delete failed:", error.message);
+    throw new Error("We could not delete your account. Please contact support.");
+  }
+
   await supabase.auth.signOut();
 }
 

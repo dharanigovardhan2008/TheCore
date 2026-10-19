@@ -58,7 +58,7 @@ export function getAccentTokens(accentValue: string | null) {
   const glow = `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, 0.35)`;
   
   // Light mode ink: darken base until contrast with light tint is >= 4.5
-  let inkLightRgb = { ...baseRgb };
+  const inkLightRgb = { ...baseRgb };
   let currentContrastLight = contrast(tintRgb, inkLightRgb);
   
   while (currentContrastLight < 4.5 && (inkLightRgb.r > 0 || inkLightRgb.g > 0 || inkLightRgb.b > 0)) {
@@ -73,7 +73,7 @@ export function getAccentTokens(accentValue: string | null) {
   // Assuming dark mode card surface is #1E293B (rgb: 30, 41, 59)
   const darkSurface = { r: 30, g: 41, b: 59 };
   const darkTintRgb = blend(baseRgb, 0.12, darkSurface);
-  let inkDarkRgb = { ...baseRgb };
+  const inkDarkRgb = { ...baseRgb };
   let currentContrastDark = contrast(darkTintRgb, inkDarkRgb);
 
   while (currentContrastDark < 4.5 && (inkDarkRgb.r < 255 || inkDarkRgb.g < 255 || inkDarkRgb.b < 255)) {

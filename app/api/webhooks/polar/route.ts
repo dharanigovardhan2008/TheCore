@@ -1,92 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, hasServiceRoleKey } from '@/utils/supabase/admin';
+import { revalidatePath } from 'next/cache';
 import {
   parsePolarWebhook,
   polarWebhooks,
   cycleFromPolarProductId,
-  getPolarClient,
   revokePolarSubscription,
 } from '@/lib/polar';
+import { fulfillPolarOrder, resolvePolarUserId } from '@/lib/polar-fulfill';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 type AdminDb = ReturnType<typeof createAdminClient>;
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Resolve our user ID from the Polar customer (external_id is set to our user ID at checkout). */
-function resolveUserId(data: {
-  customer?: { external_id?: string | null } | null;
-  metadata?: Record<string, unknown> | null;
-}): string | null {
-  const fromCustomer = data.customer?.external_id;
-  if (fromCustomer && UUID_RE.test(fromCustomer)) return fromCustomer;
-  const fromMeta = data.metadata?.user_id;
-  if (typeof fromMeta === 'string' && UUID_RE.test(fromMeta)) return fromMeta;
-  return null;
-}
-
-async function handleOrderPaid(adminDb: AdminDb, order: any): Promise<string> {
-  const cycle = cycleFromPolarProductId(order.product_id ?? order.product?.id);
-  if (!cycle) return 'ignored: not a TheCore product';
-
-  const userId = resolveUserId(order);
-  if (!userId) {
-    console.error('[Polar webhook] order.paid without a resolvable user', order.id);
-    return 'ignored: no user';
-  }
-
-  // First purchase: we created the order row at checkout and passed its reference in metadata.
-  let orderRef: string | null = typeof order.metadata?.order_ref === 'string' ? order.metadata.order_ref : null;
-  if (!orderRef && order.checkout_id) {
-    const { data } = await adminDb
-      .from('orders')
-      .select('cf_order_id')
-      .eq('provider', 'polar')
-      .eq('provider_checkout_id', order.checkout_id)
-      .maybeSingle();
-    orderRef = data?.cf_order_id ?? null;
-  }
-  // Renewal (no checkout of ours): a deterministic reference keeps retries idempotent.
-  if (!orderRef) orderRef = `core_renew_${order.id}`;
-
-  // End of the period just paid for (authoritative, from the subscription).
-  let periodEnd: string | null = null;
-  const subscriptionId: string | null = order.subscription_id ?? order.subscription?.id ?? null;
-  if (subscriptionId) {
-    try {
-      const sub = await getPolarClient().subscriptions.get(subscriptionId);
-      periodEnd = sub.current_period_end ? new Date(sub.current_period_end as unknown as string).toISOString() : null;
-    } catch (err) {
-      console.warn('[Polar webhook] could not load subscription', subscriptionId, (err as Error)?.message);
-    }
-  }
-
-  const paidAmount: number = order.net_amount ?? order.subtotal_amount ?? order.amount;
-  const { data: result, error } = await adminDb.rpc('fulfill_payment', {
-    p_provider: 'polar',
-    p_order_ref: orderRef,
-    p_provider_order_id: order.id,
-    p_user_id: userId,
-    p_billing_cycle: cycle,
-    p_paid_amount: paidAmount,
-    p_currency: String(order.currency || '').toUpperCase(),
-    p_period_end: periodEnd,
-    p_subscription_id: subscriptionId,
-    p_customer_id: order.customer_id ?? order.customer?.id ?? null,
-  });
-  if (error) throw new Error(`fulfill_payment failed: ${error.message}`);
-
-  if (result === 'mismatch') {
-    console.error('[Polar webhook] AMOUNT MISMATCH - Pro NOT granted', { orderRef, polarOrderId: order.id, paidAmount });
-  }
-  if (result === 'not_found') {
-    throw new Error(`fulfill_payment: order not found for ${orderRef}`);
-  }
-  return String(result);
-}
 
 async function handleOrderRefunded(adminDb: AdminDb, order: any): Promise<string> {
   const cycle = cycleFromPolarProductId(order.product_id ?? order.product?.id);
@@ -114,7 +41,7 @@ async function handleSubscription(adminDb: AdminDb, type: string, sub: any): Pro
   const cycle = cycleFromPolarProductId(sub.product_id ?? sub.product?.id);
   if (!cycle) return 'ignored: not a TheCore product';
 
-  const userId = resolveUserId(sub);
+  const userId = resolvePolarUserId(sub);
   if (!userId) return 'ignored: no user';
 
   const revoke = type === 'subscription.revoked';
@@ -186,7 +113,7 @@ export async function POST(req: NextRequest) {
     let outcome = 'ignored';
     switch (event.type) {
       case 'order.paid':
-        outcome = await handleOrderPaid(adminDb, data);
+        outcome = await fulfillPolarOrder(adminDb, data);
         break;
       case 'order.refunded':
         outcome = await handleOrderRefunded(adminDb, data);
@@ -208,6 +135,7 @@ export async function POST(req: NextRequest) {
       .update({ processed_at: new Date().toISOString() })
       .eq('webhook_id', webhookId);
 
+    revalidatePath('/dashboard', 'layout');
     console.log(`[Polar webhook] ${event.type} -> ${outcome}`);
     return NextResponse.json({ received: true, outcome }, { status: 200 });
   } catch (err) {

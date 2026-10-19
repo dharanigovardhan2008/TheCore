@@ -100,8 +100,8 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
           : status === 'failed'
           ? "We couldn't complete your payment. Please try again or choose another payment method."
           : status === 'pending'
-          ? errorMessage || 'Cashfree is awaiting bank confirmation. Your account will automatically activate once confirmed.'
-          : 'Verifying payment authorization with Cashfree Payments. Please do not close this window.'
+          ? errorMessage || 'Waiting for payment confirmation. Your account will activate automatically.'
+          : 'Verifying your payment. Please do not close this window.'
       }
       primaryButtonText={
         status === 'success'

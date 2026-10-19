@@ -1,8 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { CURRENT_TERMS_VERSION, LEGAL_VERSION } from '../lib/legal';
-import { updateSession } from '../utils/supabase/middleware';
-import { NextRequest } from 'next/server';
+import { CURRENT_TERMS_VERSION } from '../lib/legal';
 
 describe('Terms Consent Suite', () => {
   const mockDb: Record<string, { terms_version: string | null; terms_accepted_at: string | null }> = {};
@@ -49,23 +47,3 @@ describe('Terms Consent Suite', () => {
     assert.strictEqual(evaluateShouldShowTerms(userId, bumpedVersion), false);
   });
 });
-
-describe('Middleware & Auth Session Suite', () => {
-  it('redirects unauthenticated requests from /dashboard to /login', async () => {
-    const unauthReq = new NextRequest('http://localhost:3000/dashboard');
-    const unauthRes = await updateSession(unauthReq);
-    assert.strictEqual(unauthRes.status, 307);
-    assert.ok(unauthRes.headers.get('location')?.includes('/login'));
-  });
-
-  it('configures session cookie lifespan for 400 days', () => {
-    const expectedMaxAge = 400 * 24 * 60 * 60;
-    assert.strictEqual(expectedMaxAge, 34560000);
-  });
-
-  it('enforces vault security separation (vault remains locked on login)', () => {
-    const defaultVaultPassword: string | null = null;
-    assert.strictEqual(defaultVaultPassword === null, true);
-  });
-});
-

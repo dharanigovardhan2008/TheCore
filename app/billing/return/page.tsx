@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: 'Verifying your payment.',
 };
 
+export const dynamic = 'force-dynamic';
+
 interface ReturnPageProps {
   searchParams: Promise<{ order_id?: string }>;
 }

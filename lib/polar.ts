@@ -87,6 +87,8 @@ export async function createPolarCheckout(params: {
     customer_email: params.email,
     customer_name: params.name || undefined,
     success_url: params.successUrl,
+    currency: 'usd',
+    allow_discount_codes: false,
     metadata: {
       app: 'thecore',
       user_id: params.userId,

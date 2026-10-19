@@ -53,7 +53,9 @@ export async function GET(request: Request) {
           { onConflict: 'id' }
         )
 
-      const next = requestUrl.searchParams.get('next')
+      const rawNext = requestUrl.searchParams.get('next')
+      // Only same-site paths are allowed (blocks redirects to other sites).
+      const next = rawNext && /^\/(?![/\\])/.test(rawNext) ? rawNext : null
       const isSignup = requestUrl.searchParams.get('signup') === 'true'
 
       // Check if new user (created within the last 60 seconds)

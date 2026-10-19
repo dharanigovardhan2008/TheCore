@@ -5,6 +5,7 @@ import { createAdminClient, hasServiceRoleKey } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { projectPath } from '@/lib/routes'
+import { CURRENT_TERMS_VERSION } from '@/lib/legal'
 import {
   projectSchema,
   serviceSchema,
@@ -33,6 +34,7 @@ import {
   isValidIndianMobile
 } from '@/lib/cashfree'
 import { getPolarProductId, assertPolarProductPrice, createPolarCheckout, getPolarClient } from '@/lib/polar'
+import { fulfillPolarOrder } from '@/lib/polar-fulfill'
 import { getSiteUrl } from '@/lib/site-url'
 import {
   currencyFromCountry,
@@ -628,35 +630,36 @@ export async function archiveProject(id: string, archive: boolean): Promise<void
   revalidatePath(projectPath(id));
 }
 
-export async function acceptTerms(version: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+export async function acceptTerms(version: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    if (version !== CURRENT_TERMS_VERSION) {
+      return { success: false, message: 'These terms were updated. Please refresh the page and try again.' }
+    }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert(
-      {
-        id: user.id,
-        terms_version: version,
-        terms_accepted_at: new Date().toISOString()
-      },
-      { onConflict: 'id' }
-    )
-    .select('terms_version')
-    .single()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, message: 'Please sign in again.' }
 
-  if (error) {
-    console.error('Failed to update terms acceptance:', error)
-    throw error
+    // The user ID comes from the verified session, never from the client.
+    // The server key is used so acceptance is saved even if the profile row is missing.
+    const adminDb = createAdminClient()
+    const { error } = await adminDb
+      .from('profiles')
+      .upsert(
+        { id: user.id, terms_version: version, terms_accepted_at: new Date().toISOString() },
+        { onConflict: 'id' }
+      )
+    if (error) {
+      console.error('[Terms] could not save acceptance:', error.message)
+      return { success: false, message: "We couldn't save your acceptance. Please try again." }
+    }
+
+    revalidatePath('/dashboard', 'layout')
+    return { success: true }
+  } catch (err) {
+    console.error('[Terms] failed:', (err as Error)?.message)
+    return { success: false, message: "We couldn't save your acceptance. Please try again." }
   }
-
-  if (data?.terms_version !== version) {
-    throw new Error('Terms version update mismatch')
-  }
-  
-  revalidatePath('/dashboard')
-  return { success: true }
 }
 
 /**
@@ -946,6 +949,28 @@ export async function verifyOrderReturn(orderId: string): Promise<VerifyOrderRet
 
     // status === 'created'
     if (order.provider === 'polar') {
+      // Ask Polar directly, so Pro activates even if the webhook is late or missed.
+      // The same safe function as the webhook is used, so Pro is never extended twice.
+      if (order.provider_checkout_id && hasServiceRoleKey()) {
+        try {
+          const list = await getPolarClient().orders.list({ checkout_id: order.provider_checkout_id, limit: 5 })
+          const paidOrder = list.items.find((o) => o.paid || o.status === 'paid')
+          if (paidOrder) {
+            const adminDb = createAdminClient()
+            const result = await fulfillPolarOrder(adminDb, paidOrder)
+            revalidatePath('/dashboard', 'layout')
+            revalidatePath('/dashboard/settings/billing')
+            if (result === 'fulfilled' || result === 'duplicate') {
+              return { success: true, orderStatus: 'paid', order: { ...order, status: 'paid', paid_at: order.paid_at ?? new Date().toISOString() } }
+            }
+            if (result === 'mismatch') {
+              return { success: false, orderStatus: 'failed', order, errorMessage: 'Payment verification failed. Please contact support with your order ID.' }
+            }
+          }
+        } catch (err) {
+          console.error('[Billing Return] Polar check failed:', (err as Error)?.message)
+        }
+      }
       return {
         success: false,
         orderStatus: 'pending',
@@ -980,7 +1005,7 @@ export async function verifyOrderReturn(orderId: string): Promise<VerifyOrderRet
         return { success: false, orderStatus: 'failed', order, errorMessage: 'Order verification failed due to an amount mismatch. Please contact support.' }
       }
 
-      revalidatePath('/dashboard')
+      revalidatePath('/dashboard', 'layout')
       revalidatePath('/dashboard/settings/billing')
       revalidatePath('/billing/return')
       return { success: true, orderStatus: 'paid', order: { ...order, status: 'paid' } }

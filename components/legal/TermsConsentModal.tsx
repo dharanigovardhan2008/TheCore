@@ -12,21 +12,24 @@ interface TermsConsentModalProps {
 export default function TermsConsentModal({ showConsent }: TermsConsentModalProps) {
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(showConsent);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   if (!isOpen) return null;
 
   const handleAccept = async () => {
     setLoading(true);
+    setError(null);
     try {
       const result = await acceptTerms(CURRENT_TERMS_VERSION);
       if (result?.success) {
         setIsOpen(false);
         router.refresh();
+      } else {
+        setError(result?.message || 'Could not save your acceptance. Please try again.');
       }
-    } catch (err) {
-      console.error('Failed to accept terms', err);
-      alert('Failed to accept terms. Please try again.');
+    } catch {
+      setError('Could not save your acceptance. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -39,6 +42,11 @@ export default function TermsConsentModal({ showConsent }: TermsConsentModalProp
         <p className="text-content-secondary mb-6 text-sm">
           Please review and accept our <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline">Privacy Policy</a> to continue using TheCore.
         </p>
+        {error && (
+          <p role="alert" className="mb-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <button
           onClick={handleAccept}
           disabled={loading}
