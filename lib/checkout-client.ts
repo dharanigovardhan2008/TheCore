@@ -43,11 +43,19 @@ export async function launchCheckout(
   }
   try {
     const cashfree = await loadCashfree(session.environment);
-    const result = await cashfree.checkout({
-      paymentSessionId: session.paymentSessionId,
-      redirectTarget: '_self',
-      returnUrl: session.returnUrl,
-    });
+    // If the browser is handed over to Cashfree this page unloads and the timer never matters.
+    // If something blocks the redirect, fail loudly instead of leaving a blurred, stuck screen.
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Cashfree checkout did not open')), 20000)
+    );
+    const result = await Promise.race([
+      cashfree.checkout({
+        paymentSessionId: session.paymentSessionId,
+        redirectTarget: '_self',
+        returnUrl: session.returnUrl,
+      }),
+      timeout,
+    ]);
     if (result?.error) {
       return result.error.message || "We couldn't complete your payment. Please try again.";
     }
