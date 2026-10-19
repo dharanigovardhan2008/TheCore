@@ -5,18 +5,24 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { calculateNewExpiry, type BillingCycle } from '@/lib/plans';
 import { revalidatePath } from 'next/cache';
+import { revokePolarSubscription } from '@/lib/polar';
 
-// In-memory rate-limiter for administrative mutations (prevent accidental rapid fire)
-const adminActionTimestamps = new Map<string, number[]>();
-
-function checkRateLimit(adminId: string, limit: number = 20, windowMs: number = 60000) {
-  const now = Date.now();
-  const timestamps = (adminActionTimestamps.get(adminId) || []).filter((t) => now - t < windowMs);
-  if (timestamps.length >= limit) {
+// Rate limit for admin mutations, counted from the audit log so it works across serverless instances.
+async function checkRateLimit(
+  adminDb: ReturnType<typeof createAdminClient>,
+  adminId: string,
+  limit: number = 20,
+  windowMs: number = 60000
+) {
+  const since = new Date(Date.now() - windowMs).toISOString();
+  const { count } = await adminDb
+    .from('admin_audit_log')
+    .select('*', { count: 'exact', head: true })
+    .eq('admin_id', adminId)
+    .gte('created_at', since);
+  if ((count ?? 0) >= limit) {
     throw new Error('Admin rate limit reached. Please wait a moment before trying again.');
   }
-  timestamps.push(now);
-  adminActionTimestamps.set(adminId, timestamps);
 }
 
 /**
@@ -144,8 +150,14 @@ export async function getAdminUsers(options?: {
   }
 
   if (options?.search && options.search.trim()) {
-    const term = `%${options.search.trim()}%`;
-    query = query.or(`display_name.ilike.${term},id.ilike.${term},profession.ilike.${term},workplace.ilike.${term}`);
+    const clean = options.search.trim().replace(/[,()*%\\]/g, ' ').trim().slice(0, 100);
+    if (clean) {
+      const term = `%${clean}%`;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+      query = query.or(
+        `display_name.ilike.${term},profession.ilike.${term},workplace.ilike.${term}${isUuid ? `,id.eq.${clean}` : ''}`
+      );
+    }
   }
 
   const limit = options?.limit || 25;
@@ -193,7 +205,7 @@ export async function getAdminUserDetail(userId: string) {
  */
 export async function extendUserPro(userId: string, cycle: BillingCycle, reason: string) {
   const { adminId, adminDb } = await assertAdmin();
-  checkRateLimit(adminId);
+  await checkRateLimit(adminDb, adminId);
 
   if (!reason || reason.trim().length < 4) {
     throw new Error('A valid reason (at least 4 characters) is required to grant or extend Pro.');
@@ -228,7 +240,7 @@ export async function extendUserPro(userId: string, cycle: BillingCycle, reason:
  */
 export async function revokeUserPro(userId: string, reason: string) {
   const { adminId, adminDb } = await assertAdmin();
-  checkRateLimit(adminId);
+  await checkRateLimit(adminDb, adminId);
 
   if (!reason || reason.trim().length < 4) {
     throw new Error('A valid reason is required to revoke Pro access.');
@@ -236,19 +248,27 @@ export async function revokeUserPro(userId: string, reason: string) {
 
   const { data: profile } = await adminDb
     .from('profiles')
-    .select('plan, plan_expires_at')
+    .select('plan, plan_expires_at, plan_provider, polar_subscription_id')
     .eq('id', userId)
     .single();
+
+  // Stop a live Polar subscription first, so the customer is not charged again after losing access.
+  if (profile?.plan_provider === 'polar' && profile.polar_subscription_id) {
+    await revokePolarSubscription(profile.polar_subscription_id);
+  }
 
   await adminDb.from('profiles').update({
     plan: 'free',
     plan_expires_at: null,
+    plan_provider: null,
+    cancel_at_period_end: false,
   }).eq('id', userId);
 
   await logAdminAction(adminDb, adminId, 'revoke_pro', userId, {
     reason,
     previous_plan: profile?.plan,
     previous_expiry: profile?.plan_expires_at,
+    polar_subscription_stopped: Boolean(profile?.plan_provider === 'polar' && profile?.polar_subscription_id),
   });
 
   revalidatePath('/admin/users');
@@ -260,7 +280,7 @@ export async function revokeUserPro(userId: string, reason: string) {
  */
 export async function toggleUserDisabled(userId: string, disabled: boolean, reason: string) {
   const { adminId, adminDb } = await assertAdmin();
-  checkRateLimit(adminId);
+  await checkRateLimit(adminDb, adminId);
 
   if (!reason || reason.trim().length < 4) {
     throw new Error('A valid reason is required to modify account status.');
@@ -316,7 +336,7 @@ export async function getAdminPayments(options?: {
  */
 export async function markOrderRefundNote(orderId: string, note: string) {
   const { adminId, adminDb } = await assertAdmin();
-  checkRateLimit(adminId);
+  await checkRateLimit(adminDb, adminId);
 
   if (!note || note.trim().length < 4) {
     throw new Error('A note of at least 4 characters is required.');
@@ -445,7 +465,7 @@ export async function updatePlanConfig(
   }
 ) {
   const { adminId, adminDb } = await assertAdmin();
-  checkRateLimit(adminId);
+  await checkRateLimit(adminDb, adminId);
 
   const { error } = await adminDb
     .from('plan_configs')
@@ -489,7 +509,7 @@ export async function createPlanConfig(planData: {
   is_featured?: boolean;
 }) {
   const { adminId, adminDb } = await assertAdmin();
-  checkRateLimit(adminId);
+  await checkRateLimit(adminDb, adminId);
 
   const cleanId = planData.id.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
   if (!cleanId) throw new Error('A valid unique plan identifier is required.');
@@ -534,7 +554,7 @@ export async function createPlanConfig(planData: {
  */
 export async function togglePlanActive(planId: string, isActive: boolean) {
   const { adminId, adminDb } = await assertAdmin();
-  checkRateLimit(adminId);
+  await checkRateLimit(adminDb, adminId);
 
   const { error } = await adminDb
     .from('plan_configs')

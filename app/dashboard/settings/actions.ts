@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { redirect } from "next/navigation";
+import { revokePolarSubscription } from "@/lib/polar";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -22,6 +23,17 @@ export async function deleteAccount() {
 
   // The ID comes from the verified session. Deleting the auth user removes the linked data.
   const adminDb = createAdminClient();
+
+  // Stop an active international (Polar) subscription first, so a deleted account is never billed again.
+  const { data: billing } = await adminDb
+    .from("profiles")
+    .select("plan_provider, polar_subscription_id")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (billing?.polar_subscription_id) {
+    await revokePolarSubscription(billing.polar_subscription_id);
+  }
+
   await adminDb.from("projects").delete().eq("user_id", user.id);
   const { error } = await adminDb.auth.admin.deleteUser(user.id);
   if (error) {
