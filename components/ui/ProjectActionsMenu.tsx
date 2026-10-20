@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MoreVertical, ExternalLink, Edit2, Copy, Archive, ArchiveRestore, Trash2, AlertTriangle } from "lucide-react";
-import { duplicateProject, archiveProject, deleteProject } from "@/app/dashboard/actions";
+import { duplicateProject, archiveProject, deleteProject, getProjectLimitStatus } from "@/app/dashboard/actions";
+import ProjectLimitModal from "./ProjectLimitModal";
 import { useRouter } from "next/navigation";
 import { ProjectWithRelations, Project } from "@/lib/types";
 
@@ -15,6 +16,7 @@ export default function ProjectActionsMenu({ project, onEdit }: ProjectActionsMe
   const [isOpen, setIsOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ limit: number | null } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -92,7 +94,23 @@ export default function ProjectActionsMenu({ project, onEdit }: ProjectActionsMe
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              handleAction(async () => { await duplicateProject(project.id); });
+              handleAction(async () => {
+                const status = await getProjectLimitStatus();
+                if (status.atLimit) {
+                  setLimitInfo({ limit: status.limit });
+                  return;
+                }
+                try {
+                  await duplicateProject(project.id);
+                } catch (err) {
+                  const after = await getProjectLimitStatus().catch(() => null);
+                  if (after?.atLimit) {
+                    setLimitInfo({ limit: after.limit });
+                    return;
+                  }
+                  throw err;
+                }
+              });
             }}
             className="w-full text-left px-4 py-4 sm:py-2 text-base sm:text-[15px] text-content hover:bg-surface-tint/50 flex items-center gap-3 sm:gap-2 transition-colors"
             role="menuitem"
@@ -192,6 +210,8 @@ export default function ProjectActionsMenu({ project, onEdit }: ProjectActionsMe
           </div>
         </div>
       )}
+
+      <ProjectLimitModal isOpen={Boolean(limitInfo)} onClose={() => setLimitInfo(null)} limit={limitInfo?.limit} />
     </div>
   );
 }

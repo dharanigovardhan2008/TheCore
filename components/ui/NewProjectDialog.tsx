@@ -6,7 +6,8 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import LogoUpload from './LogoUpload';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Plus, Trash2, FolderPlus, ArrowRight } from 'lucide-react';
-import { createProjectWithServices, updateProjectWithServices, getUserEmails } from '@/app/dashboard/actions';
+import { createProjectWithServices, updateProjectWithServices, getUserEmails, getProjectLimitStatus } from '@/app/dashboard/actions';
+import ProjectLimitModal from './ProjectLimitModal';
 import * as z from 'zod';
 import { ProjectWithRelations, DashboardProject, PROJECT_ACCENTS } from '@/lib/types';
 
@@ -53,6 +54,8 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [userEmails, setUserEmails] = useState<string[]>([]);
+  const [limitInfo, setLimitInfo] = useState<{ limit: number | null } | null>(null);
+  const [checkingLimit, setCheckingLimit] = useState(false);
 
   const { register, control, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -76,6 +79,18 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
   useEffect(() => {
     if (isOpen) {
       getUserEmails().then(setUserEmails).catch(console.error);
+
+      // Creating (not editing): show the "limit reached" popup instead of the form when the plan is full.
+      setLimitInfo(null);
+      if (!projectToEdit) {
+        setCheckingLimit(true);
+        getProjectLimitStatus()
+          .then((status) => { if (status.atLimit) setLimitInfo({ limit: status.limit }); })
+          .catch(console.error)
+          .finally(() => setCheckingLimit(false));
+      } else {
+        setCheckingLimit(false);
+      }
       
       if (projectToEdit) {
         reset({
@@ -114,6 +129,18 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
 
   if (!isOpen) return null;
 
+  if (limitInfo) {
+    return <ProjectLimitModal isOpen onClose={onClose} limit={limitInfo.limit} />;
+  }
+
+  if (checkingLimit && !projectToEdit) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" role="status" aria-label="Loading">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+      </div>
+    );
+  }
+
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     setError('');
@@ -141,6 +168,16 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
       reset();
       onClose();
     } catch (err: any) {
+      // Server errors can be masked in production, so re-check the limit instead of trusting the message.
+      if (!projectToEdit) {
+        try {
+          const status = await getProjectLimitStatus();
+          if (status.atLimit || String(err?.message || '').includes('PLAN_LIMIT_REACHED')) {
+            setLimitInfo({ limit: status.limit });
+            return;
+          }
+        } catch {}
+      }
       setError(err.message || 'An unexpected error occurred.');
     } finally {
       setIsSubmitting(false);
@@ -246,10 +283,10 @@ export default function NewProjectDialog({ isOpen, onClose, projectToEdit }: New
                         {...register('status')} 
                         className="w-full h-12 px-4 bg-white hover:bg-white/90 border border-[var(--border-light)] rounded-[var(--radius-input)] text-[15px] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-premium appearance-none shadow-sm font-medium"
                       >
-                        <option value="idea">💡 Idea</option>
-                        <option value="in_progress">▶️ In Progress</option>
-                        <option value="deployed">✅ Deployed</option>
-                        <option value="paused">⏸️ Paused</option>
+                        <option value="idea">Idea</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="deployed">Deployed</option>
+                        <option value="paused">Paused</option>
                       </select>
                     </div>
 

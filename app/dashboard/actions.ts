@@ -665,6 +665,29 @@ export async function acceptTerms(version: string): Promise<{ success: boolean; 
 /**
  * Fetch current user plan, expiry date, limits, project count, and order history
  */
+/** Cheap check used by the UI to show the "limit reached" popup before the create form opens. */
+export async function getProjectLimitStatus(): Promise<{ atLimit: boolean; limit: number | null; count: number }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { atLimit: false, limit: null, count: 0 }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan, plan_expires_at')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const limits = getEffectiveLimits(profile?.plan, profile?.plan_expires_at)
+  const { count } = await supabase
+    .from('projects')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
+  const limit = Number.isFinite(limits.maxProjects) ? limits.maxProjects : null
+  const used = count ?? 0
+  return { atLimit: limit !== null && used >= limit, limit, count: used }
+}
+
 export async function getUserPlanAndUsage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
