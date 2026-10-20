@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { headers } from 'next/headers'
-import { Lock, Check, Timer } from 'lucide-react'
+import { Lock, Check, Timer, X, ShieldCheck, ArrowRight } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
 import { currencyFromCountry } from '@/lib/currency'
 import Reveal from '@/components/ui/Reveal'
@@ -26,11 +26,26 @@ const steps = [
   ['Lock your secrets', 'Store .env files in the encrypted vault and list what is left to do.'],
 ]
 const faqs = [
+  ['What happens when I reach the free limit?', 'The Free plan includes 3 projects. When you try to add another, TheCore asks you to upgrade. Everything you already saved stays exactly as it is.'],
+  ['Can I leave whenever I want?', 'Yes. You can export all of your data as JSON at any time, so you are never locked in.'],
   ['Can you read my .env files?', 'No. They are encrypted in your browser before they are saved. Without your master password, nobody can read them, including us. A lost master password cannot be recovered.'],
   ['Do you store my hosting passwords?', 'Never. TheCore only records which email you used on each platform.'],
   ['Is everything end-to-end encrypted?', 'Only the .env vault is. Project names, platforms, emails and to-dos are stored normally, protected by row-level security.'],
   ['Does Pro renew automatically?', 'It depends on how you pay. In India (INR via Cashfree), Pro is a prepaid pass for 1 or 12 months and never renews by itself. For international customers (USD via Polar), Pro renews automatically until you cancel it from Billing, and you keep access until the end of the period you paid for.'],
 ]
+const pains = [
+  ['Which email did I use for Vercel?', 'You have five Gmail addresses and an old Outlook. One of them owns that deployment, and you cannot remember which.'],
+  ['Where did I save that .env?', 'A desktop folder, a chat with yourself, a private repo you forgot about. None of them are safe or easy to find.'],
+  ['What was left to ship?', 'The to-do list lived in your head, and your head has already moved on to the next project.'],
+] as const
+const compare = [
+  ['Which email runs each platform', 'Typed by hand, goes stale', 'One record per platform, grouped in the Accounts view'],
+  ['Your .env files', 'Plain text on disk or in a repo', 'Encrypted in your browser, masked by default'],
+  ['What is left to do', 'A separate app you forget to open', 'To-dos that stay with each project'],
+  ['Time to set up', 'You build and maintain the system', 'Under two minutes'],
+] as const
+const freePerks = ['Up to 3 projects', '1 encrypted .env file per project', 'Platform and login email tracker', 'To-do manager and Accounts view', 'Full JSON export and import']
+const proPerks = ['Unlimited projects', 'Unlimited encrypted .env files per project', 'Multi-environment configs (.env, .env.local, .env.prod)', 'Priority platform and database sync', 'Direct developer support', 'Early access to new features']
 const card = 'rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/5'
 const mini = 'mt-5 rounded-2xl bg-slate-50 p-4 text-sm'
 
@@ -83,6 +98,12 @@ export default async function Home() {
               <Link href={cta} className="rounded-full bg-blue-600 px-8 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-700">Start free, no card needed</Link>
               <a href="#pricing" className="rounded-full border border-slate-300 bg-white/60 px-8 py-3.5 font-semibold backdrop-blur transition hover:bg-white">See pricing</a>
             </div>
+            <p className="mt-4 text-sm text-slate-500">Free forever plan. No credit card. Ready in two minutes.</p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-slate-600">
+              {['AES-256 encrypted vault', 'Encrypted in your browser', 'No hosting passwords stored'].map((t) => (
+                <span key={t} className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-blue-600" />{t}</span>
+              ))}
+            </div>
           </Reveal>
 
           <Reveal delay={150} className="relative mx-auto mt-16 max-w-5xl">
@@ -120,6 +141,16 @@ export default async function Home() {
             </span>
           ))}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 pb-6 pt-8">
+        <Reveal className="text-center"><h2 className={h2}>Sound familiar?</h2><p className="mx-auto mt-4 max-w-xl text-slate-600">Every developer with more than two side projects ends up asking the same three questions.</p></Reveal>
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {pains.map(([q, d], i) => (
+            <Reveal key={q} delay={i * 80}><div className={`${card} h-full`}><h3 className="text-lg font-semibold">{q}</h3><p className="mt-2 text-sm text-slate-600">{d}</p></div></Reveal>
+          ))}
+        </div>
+        <Reveal className="mt-8 text-center"><p className="font-semibold text-slate-900">TheCore keeps all three answers in one place. <Link href={cta} className="text-blue-600 hover:underline">Try it free</Link></p></Reveal>
       </section>
 
       <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
@@ -160,6 +191,42 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-5xl px-5 py-20">
+        <Reveal className="text-center"><h2 className={h2}>Why not just use a spreadsheet?</h2><p className="mx-auto mt-4 max-w-xl text-slate-600">You can. Here is what you give up.</p></Reveal>
+        <Reveal delay={80}>
+          <div className="mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="grid grid-cols-[1.1fr_1fr_1fr] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <span />
+              <span>Notes, sheets, local files</span>
+              <span className="text-blue-600">TheCore</span>
+            </div>
+            {compare.map(([what, other, core]) => (
+              <div key={what} className="grid grid-cols-[1.1fr_1fr_1fr] gap-4 border-b border-slate-100 px-5 py-4 text-sm last:border-0">
+                <span className="font-semibold text-slate-900">{what}</span>
+                <span className="flex items-start gap-2 text-slate-500"><X className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />{other}</span>
+                <span className="flex items-start gap-2 font-medium text-slate-800"><Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />{core}</span>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-5 pb-6">
+        <Reveal className="text-center"><h2 className={h2}>Start free. Upgrade when you outgrow it.</h2><p className="mx-auto mt-4 max-w-xl text-slate-600">Most people begin with the Free plan. Pro is there when your project list grows past three.</p></Reveal>
+        <div className="mt-12 grid gap-5 md:grid-cols-2">
+          <Reveal><div className={`${card} h-full`}>
+            <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Free</p>
+            <ul className="mt-5 space-y-3 text-sm text-slate-700">{freePerks.map((t) => <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />{t}</li>)}</ul>
+            <Link href={cta} className="mt-7 inline-block rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold transition hover:bg-slate-50">Start free</Link>
+          </div></Reveal>
+          <Reveal delay={80}><div className="h-full rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 shadow-lg shadow-blue-900/5">
+            <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Pro</p>
+            <ul className="mt-5 space-y-3 text-sm text-slate-800">{proPerks.map((t) => <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />{t}</li>)}</ul>
+            <a href="#pricing" className="group mt-7 inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700">See Pro pricing<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></a>
+          </div></Reveal>
+        </div>
+      </section>
+
       <Reveal><PricingSection signedIn={Boolean(user)} initialCurrency={currencyFromCountry(country)} prices={prices} /></Reveal>
 
       <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-5 py-24">
@@ -175,8 +242,9 @@ export default async function Home() {
       <section className="px-5 pb-24">
         <div className="mx-auto max-w-5xl rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-500 px-6 py-16 text-center text-white">
           <h2 className="mx-auto max-w-xl text-4xl font-bold tracking-tight sm:text-5xl">Stop searching. Start shipping.</h2>
-          <p className="mx-auto mt-4 max-w-md text-blue-100">Set up your first project in under two minutes.</p>
+          <p className="mx-auto mt-4 max-w-md text-blue-100">Set up your first project in under two minutes. Know where everything lives before you forget it again.</p>
           <Link href={cta} className="mt-8 inline-block rounded-full bg-white px-8 py-3.5 font-semibold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-50">Create your free account</Link>
+          <p className="mt-4 text-sm text-blue-100/90">Free forever plan. No credit card needed.</p>
         </div>
       </section>
 
