@@ -23,7 +23,11 @@ export default function NavigationLoader() {
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       // Find the closest anchor tag
-      const target = (e.target as HTMLElement).closest('a');
+      const clicked = e.target as HTMLElement;
+      // Buttons and menus that sit inside a clickable card (like the project 3-dot menu) are not page navigation.
+      if (clicked.closest('button, [role="menu"], [role="menuitem"], [data-no-nav-loader]')) return;
+
+      const target = clicked.closest('a');
       if (!target) return;
 
       const href = target.getAttribute('href');
@@ -60,7 +64,11 @@ export default function NavigationLoader() {
 
       // Start loading animation from the next second (180ms delay prevents flash for instant cached pages)
       timerRef.current = setTimeout(() => {
+        // If the click was cancelled (preventDefault), nothing is navigating, so do not show the loader.
+        if (e.defaultPrevented) return;
         setIsLoading(true);
+        // Safety net: never leave the screen blurred if navigation does not happen.
+        timerRef.current = setTimeout(() => setIsLoading(false), 10000);
       }, 180);
     };
 

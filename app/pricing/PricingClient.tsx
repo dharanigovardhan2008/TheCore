@@ -203,7 +203,7 @@ export default function PricingClient({
         <div className="text-center space-y-3 max-w-xl mx-auto pt-4 border-t border-[#DCE9E3]">
           <p className="text-xs text-[#8E9F9A] flex items-center justify-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-emerald-500" />
-            {usd ? 'Prices in USD; taxes are added at checkout where applicable. Payments secured by Polar.' : 'Prices in INR, taxes as applicable. Payments secured by Cashfree.'}
+            {usd ? 'Prices in USD; taxes are added at checkout where applicable. Payments secured by Dodo Payments.' : 'Prices in INR, taxes as applicable. Payments secured by Cashfree.'}
           </p>
           <div className="flex items-center justify-center gap-4 text-xs text-[#647570]">
             <Link href="/refund-policy" className="hover:text-[#172B2A] hover:underline transition-colors">Refund Policy</Link>

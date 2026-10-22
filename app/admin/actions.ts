@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { calculateNewExpiry, type BillingCycle } from '@/lib/plans';
 import { revalidatePath } from 'next/cache';
-import { revokePolarSubscription } from '@/lib/polar';
+import { cancelDodoSubscriptionNow } from '@/lib/dodo';
 
 // Rate limit for admin mutations, counted from the audit log so it works across serverless instances.
 async function checkRateLimit(
@@ -252,9 +252,9 @@ export async function revokeUserPro(userId: string, reason: string) {
     .eq('id', userId)
     .single();
 
-  // Stop a live Polar subscription first, so the customer is not charged again after losing access.
-  if (profile?.plan_provider === 'polar' && profile.polar_subscription_id) {
-    await revokePolarSubscription(profile.polar_subscription_id);
+  // Stop a live Dodo subscription first, so the customer is not charged again after losing access.
+  if (profile?.plan_provider === 'dodo' && profile.polar_subscription_id) {
+    await cancelDodoSubscriptionNow(profile.polar_subscription_id);
   }
 
   await adminDb.from('profiles').update({
@@ -268,7 +268,7 @@ export async function revokeUserPro(userId: string, reason: string) {
     reason,
     previous_plan: profile?.plan,
     previous_expiry: profile?.plan_expires_at,
-    polar_subscription_stopped: Boolean(profile?.plan_provider === 'polar' && profile?.polar_subscription_id),
+    subscription_stopped: Boolean(profile?.plan_provider === 'dodo' && profile?.polar_subscription_id),
   });
 
   revalidatePath('/admin/users');

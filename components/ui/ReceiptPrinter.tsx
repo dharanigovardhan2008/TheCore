@@ -397,7 +397,7 @@ export interface ReceiptTicketData {
   orderId?: string;
   /** Pre-formatted amount including currency symbol, e.g. ₹99.00 or $5.00 */
   amountText?: string;
-  provider?: 'cashfree' | 'polar';
+  provider?: 'cashfree' | 'polar' | 'dodo';
   dateStr?: string;
   customerName?: string;
   planName?: string;
@@ -484,7 +484,7 @@ export function ReceiptTicketTemplate({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-xs font-bold text-slate-900 truncate">{customerName}</div>
-            <div className="text-[10px] text-slate-400 font-medium truncate">{planName} • Paid via {data?.provider === 'polar' ? 'Polar' : 'Cashfree'}</div>
+            <div className="text-[10px] text-slate-400 font-medium truncate">{planName} • Paid via {data?.provider === 'dodo' ? 'Dodo Payments' : data?.provider === 'polar' ? 'Polar' : 'Cashfree'}</div>
           </div>
         </div>
       </div>

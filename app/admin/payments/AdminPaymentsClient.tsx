@@ -52,7 +52,7 @@ export default function AdminPaymentsClient({ initialOrders, totalCount }: Admin
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Payments & Orders</h1>
           <p className="text-sm text-[var(--text-content-secondary)] mt-1">
-            Cashfree (INR) and Polar (USD) transaction records, checkout orders, and refund notes ({count} total).
+            Cashfree (INR) and Dodo Payments (USD) transaction records, checkout orders, and refund notes ({count} total).
           </p>
         </div>
 

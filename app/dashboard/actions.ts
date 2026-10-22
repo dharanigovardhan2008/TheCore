@@ -33,8 +33,8 @@ import {
   safeFetchCashfreeOrder,
   isValidIndianMobile
 } from '@/lib/cashfree'
-import { getPolarProductId, assertPolarProductPrice, createPolarCheckout, getPolarClient } from '@/lib/polar'
-import { fulfillPolarOrder } from '@/lib/polar-fulfill'
+import { getDodoProductId, assertDodoProductPrice, createDodoCheckout, getDodoCheckoutSession, getDodoPayment, createDodoPortalLink } from '@/lib/dodo'
+import { fulfillDodoPayment } from '@/lib/dodo-fulfill'
 import { getSiteUrl } from '@/lib/site-url'
 import {
   currencyFromCountry,
@@ -717,8 +717,8 @@ export async function getUserPlanAndUsage() {
     limits,
     orders: (orders || []) as Order[],
     planConfigs: (planConfigs || []) as any[],
-    planProvider: (profile?.plan_provider ?? null) as 'cashfree' | 'polar' | null,
-    hasPolarCustomer: Boolean(profile?.polar_customer_id),
+    planProvider: (profile?.plan_provider ?? null) as 'cashfree' | 'polar' | 'dodo' | null,
+    hasIntlCustomer: Boolean(profile?.polar_customer_id),
     cancelAtPeriodEnd: Boolean(profile?.cancel_at_period_end),
   }
 }
@@ -733,14 +733,14 @@ export type CheckoutSessionResult =
       environment: 'production' | 'sandbox'
       returnUrl: string
     }
-  | { ok: true; provider: 'polar'; orderId: string; checkoutUrl: string }
+  | { ok: true; provider: 'dodo'; orderId: string; checkoutUrl: string }
   | { ok: false; code: 'PHONE_REQUIRED' | 'ERROR'; message: string }
 
 const GENERIC_CHECKOUT_ERROR = "We couldn't start your payment. Please try again or contact support."
 
 /**
  * Server action: start a checkout. The SERVER decides provider and currency
- * (India -> Cashfree INR, everyone else -> Polar USD). The client may only request
+ * (India -> Cashfree INR, everyone else -> Dodo Payments USD). The client may only request
  * a manual switch, which is validated here. Amounts come from plan_configs, never from the client.
  */
 export async function createCheckoutSession(
@@ -838,14 +838,14 @@ export async function createCheckoutSession(
       }
     }
 
-    // ---- Polar (USD) ----
+    // ---- Dodo Payments (USD) ----
     const usd = Number(cycle === 'year' ? dbPlan.price_year_usd : dbPlan.price_month_usd)
     if (!Number.isFinite(usd) || usd <= 0) {
       return { ok: false, code: 'ERROR', message: GENERIC_CHECKOUT_ERROR }
     }
     const cents = Math.round(usd * 100)
-    const productId = getPolarProductId(cycle)
-    await assertPolarProductPrice(productId, cents)
+    const productId = getDodoProductId(cycle)
+    await assertDodoProductPrice(productId, cents)
 
     const { error: insertError } = await adminDb.from('orders').insert({
       user_id: user.id,
@@ -855,26 +855,26 @@ export async function createCheckoutSession(
       currency: 'USD',
       cf_order_id: orderRef,
       status: 'created',
-      provider: 'polar',
+      provider: 'dodo',
       product: 'core',
     })
     if (insertError) {
-      console.error('[Checkout] Failed to store Polar order:', insertError.message)
+      console.error('[Checkout] Failed to store Dodo order:', insertError.message)
       return { ok: false, code: 'ERROR', message: GENERIC_CHECKOUT_ERROR }
     }
 
     try {
-      const checkout = await createPolarCheckout({
+      const checkout = await createDodoCheckout({
         productId,
         userId: user.id,
         email: user.email,
         name: customerName,
         orderRef,
         cycle,
-        successUrl: returnUrl,
+        returnUrl,
       })
-      await adminDb.from('orders').update({ provider_checkout_id: checkout.checkoutId }).eq('cf_order_id', orderRef)
-      return { ok: true, provider: 'polar', orderId: orderRef, checkoutUrl: checkout.url }
+      await adminDb.from('orders').update({ provider_checkout_id: checkout.sessionId }).eq('cf_order_id', orderRef)
+      return { ok: true, provider: 'dodo', orderId: orderRef, checkoutUrl: checkout.url }
     } catch (err) {
       await adminDb.from('orders').update({ status: 'failed' }).eq('cf_order_id', orderRef)
       throw err
@@ -886,8 +886,8 @@ export async function createCheckoutSession(
 }
 
 /**
- * Open the Polar customer portal (cancel, update card, invoices) for international subscribers.
- * Uses the signed-in user's own ID, never a client-supplied customer ID.
+ * Open the Dodo customer portal (cancel, update card, invoices) for international subscribers.
+ * Uses the signed-in user's own stored customer ID, never a client-supplied one.
  */
 export async function createCustomerPortalSession(): Promise<
   { ok: true; url: string } | { ok: false; message: string }
@@ -906,11 +906,8 @@ export async function createCustomerPortalSession(): Promise<
       return { ok: false, message: 'No international subscription found for this account.' }
     }
 
-    const session = await getPolarClient().customerSessions.create({
-      external_customer_id: user.id,
-      return_url: `${getSiteUrl()}/dashboard/settings/billing`,
-    })
-    return { ok: true, url: session.customer_portal_url }
+    const url = await createDodoPortalLink(profile.polar_customer_id, `${getSiteUrl()}/dashboard/settings/billing`)
+    return { ok: true, url }
   } catch (err) {
     console.error('[Portal] failed:', (err as Error)?.message)
     return { ok: false, message: "We couldn't open the subscription portal. Please try again." }
@@ -926,7 +923,7 @@ export type VerifyOrderReturnResult = {
 
 /**
  * Status check for the return page. Never throws.
- *  - Polar: only reads our database. The webhook is the only thing that grants Pro.
+ *  - Dodo: asks Dodo for the payment and calls the same idempotent fulfil function as the webhook.
  *  - Cashfree: re-checks the order with Cashfree, then calls the SAME idempotent fulfil function
  *    the webhook uses, so a duplicate webhook or a page refresh can never extend Pro twice.
  */
@@ -971,16 +968,16 @@ export async function verifyOrderReturn(orderId: string): Promise<VerifyOrderRet
     }
 
     // status === 'created'
-    if (order.provider === 'polar') {
-      // Ask Polar directly, so Pro activates even if the webhook is late or missed.
+    if (order.provider === 'dodo') {
+      // Ask Dodo directly, so Pro activates even if the webhook is late or missed.
       // The same safe function as the webhook is used, so Pro is never extended twice.
       if (order.provider_checkout_id && hasServiceRoleKey()) {
         try {
-          const list = await getPolarClient().orders.list({ checkout_id: order.provider_checkout_id, limit: 5 })
-          const paidOrder = list.items.find((o) => o.paid || o.status === 'paid')
-          if (paidOrder) {
+          const session = await getDodoCheckoutSession(order.provider_checkout_id)
+          if (session?.payment_id && session?.payment_status === 'succeeded') {
+            const payment = await getDodoPayment(session.payment_id)
             const adminDb = createAdminClient()
-            const result = await fulfillPolarOrder(adminDb, paidOrder)
+            const result = await fulfillDodoPayment(adminDb, payment)
             revalidatePath('/dashboard', 'layout')
             revalidatePath('/dashboard/settings/billing')
             if (result === 'fulfilled' || result === 'duplicate') {
@@ -991,7 +988,7 @@ export async function verifyOrderReturn(orderId: string): Promise<VerifyOrderRet
             }
           }
         } catch (err) {
-          console.error('[Billing Return] Polar check failed:', (err as Error)?.message)
+          console.error('[Billing Return] Dodo check failed:', (err as Error)?.message)
         }
       }
       return {

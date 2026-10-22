@@ -26,7 +26,7 @@ export default async function AdminOverviewPage() {
     {
       label: 'Revenue (This Month)',
       value: `₹${stats.revenueThisMonthInr} · $${stats.revenueThisMonthUsd.toFixed(2)}`,
-      sub: 'Cashfree (INR) + Polar (USD) paid orders',
+      sub: 'Cashfree (INR) + Dodo Payments (USD) paid orders',
       icon: IndianRupee,
       color: 'text-emerald-500',
       bg: 'bg-emerald-500/10',

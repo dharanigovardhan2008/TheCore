@@ -1,0 +1,4 @@
+Delete these from your project (they are replaced by the Dodo files):
+  lib/polar.ts
+  lib/polar-fulfill.ts
+  app/api/webhooks/polar/   (whole folder)

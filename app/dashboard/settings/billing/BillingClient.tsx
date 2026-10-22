@@ -35,8 +35,8 @@ interface BillingClientProps {
     };
     orders: Order[];
     planConfigs?: any[];
-    planProvider?: 'cashfree' | 'polar' | null;
-    hasPolarCustomer?: boolean;
+    planProvider?: 'cashfree' | 'polar' | 'dodo' | null;
+    hasIntlCustomer?: boolean;
     cancelAtPeriodEnd?: boolean;
   };
 }
@@ -153,7 +153,7 @@ export default function BillingClient({ usage, initialCurrency = 'INR', allowInr
           <div style="font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
             <strong>Order Reference:</strong> ${order.cf_order_id}<br/>
             <strong>Subscription Plan:</strong> TheCore Pro (${order.billing_cycle === 'year' ? '12 Months' : '1 Month'})<br/>
-            <strong>Payment Method:</strong> ${order.provider === 'polar' ? 'Polar (USD)' : 'Cashfree Payments (INR)'}
+            <strong>Payment Method:</strong> ${order.provider === 'dodo' ? 'Dodo Payments (USD)' : order.provider === 'polar' ? 'Polar (USD)' : 'Cashfree Payments (INR)'}
           </div>
 
           <table>
@@ -260,7 +260,7 @@ export default function BillingClient({ usage, initialCurrency = 'INR', allowInr
                   </p>
                 </div>
 
-                {isPro && usage.planProvider === 'polar' && usage.hasPolarCustomer && (
+                {isPro && usage.planProvider === 'dodo' && usage.hasIntlCustomer && (
                   <div>
                     <button
                       type="button"
@@ -275,7 +275,7 @@ export default function BillingClient({ usage, initialCurrency = 'INR', allowInr
 
                 {isPro && usage.plan_expires_at && (
                   <div className="pt-4 border-t border-[var(--border-light)]">
-                    <p className="text-sm text-[var(--text-secondary)] mb-1">{usage.planProvider === 'polar' && !usage.cancelAtPeriodEnd ? 'Renews on' : 'Plan Expires'}</p>
+                    <p className="text-sm text-[var(--text-secondary)] mb-1">{usage.planProvider === 'dodo' && !usage.cancelAtPeriodEnd ? 'Renews on' : 'Plan Expires'}</p>
                     <p className="text-base font-semibold text-[var(--text-primary)]">
                       {new Date(usage.plan_expires_at).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -397,7 +397,7 @@ export default function BillingClient({ usage, initialCurrency = 'INR', allowInr
 
           <div className="text-center space-y-1">
             <p className="text-sm text-[var(--text-secondary)]">
-              {usd ? 'Secure checkout powered by Polar (merchant of record)' : 'Secure checkout powered by Cashfree Payments'}
+              {usd ? 'Secure checkout powered by Dodo Payments (merchant of record)' : 'Secure checkout powered by Cashfree Payments'}
             </p>
             <p className="text-xs text-[var(--text-tertiary)]">
               {usd ? 'Cards and local payment methods supported · taxes added at checkout where applicable' : 'UPI, cards, and NetBanking supported'} · 7-day refund on annual plans (see Refund Policy)

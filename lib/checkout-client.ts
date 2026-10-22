@@ -37,7 +37,7 @@ function loadCashfree(mode: 'production' | 'sandbox'): Promise<CashfreeSDKInstan
 export async function launchCheckout(
   session: Extract<CheckoutSessionResult, { ok: true }>
 ): Promise<string | null> {
-  if (session.provider === 'polar') {
+  if (session.provider === 'dodo') {
     window.location.assign(session.checkoutUrl);
     return null;
   }

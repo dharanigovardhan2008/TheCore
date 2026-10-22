@@ -31,7 +31,7 @@ const faqs = [
   ['Can you read my .env files?', 'No. They are encrypted in your browser before they are saved. Without your master password, nobody can read them, including us. A lost master password cannot be recovered.'],
   ['Do you store my hosting passwords?', 'Never. TheCore only records which email you used on each platform.'],
   ['Is everything end-to-end encrypted?', 'Only the .env vault is. Project names, platforms, emails and to-dos are stored normally, protected by row-level security.'],
-  ['Does Pro renew automatically?', 'It depends on how you pay. In India (INR via Cashfree), Pro is a prepaid pass for 1 or 12 months and never renews by itself. For international customers (USD via Polar), Pro renews automatically until you cancel it from Billing, and you keep access until the end of the period you paid for.'],
+  ['Does Pro renew automatically?', 'It depends on how you pay. In India (INR via Cashfree), Pro is a prepaid pass for 1 or 12 months and never renews by itself. For international customers (USD via Dodo Payments), Pro renews automatically until you cancel it from Billing, and you keep access until the end of the period you paid for.'],
 ]
 const pains = [
   ['Which email did I use for Vercel?', 'You have five Gmail addresses and an old Outlook. One of them owns that deployment, and you cannot remember which.'],

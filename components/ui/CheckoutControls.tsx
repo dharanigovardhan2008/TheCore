@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Currency } from '@/lib/currency';
 
-/** Pay-in currency switch. India = INR (Cashfree), everyone else = USD (Polar). The server re-validates the choice. */
+/** Pay-in currency switch. India = INR (Cashfree), everyone else = USD (Dodo Payments). The server re-validates the choice. */
 export function CurrencySwitch({
   value,
   onChange,

@@ -1,22 +1,22 @@
 export type Currency = 'INR' | 'USD'
-export type PayProvider = 'cashfree' | 'polar'
+export type PayProvider = 'cashfree' | 'dodo'
 
-/** India pays INR via Cashfree. Every other known country pays USD via Polar. Unknown (e.g. localhost) shows INR. */
+/** India pays INR via Cashfree. Every other known country pays USD via Dodo Payments. Unknown (e.g. localhost) shows INR. */
 export const currencyFromCountry = (c?: string | null): Currency => {
   const code = c?.trim().toUpperCase()
   if (!code) return 'INR'
   return code === 'IN' ? 'INR' : 'USD'
 }
 
-export const providerForCurrency = (cur: Currency): PayProvider => (cur === 'INR' ? 'cashfree' : 'polar')
+export const providerForCurrency = (cur: Currency): PayProvider => (cur === 'INR' ? 'cashfree' : 'dodo')
 
 /**
  * Manual switch rules (enforced on the SERVER, never trusted from the client):
- *  - Anyone may choose USD / Polar.
+ *  - Anyone may choose USD / Dodo Payments.
  *  - INR / Cashfree is only allowed for India, or when the country is unknown (local testing).
  */
 export function isProviderAllowed(country: string | null | undefined, provider: PayProvider): boolean {
-  if (provider === 'polar') return true
+  if (provider === 'dodo') return true
   const code = country?.trim().toUpperCase()
   return !code || code === 'IN'
 }

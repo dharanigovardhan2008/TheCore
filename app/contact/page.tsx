@@ -76,7 +76,7 @@ export default function ContactPage() {
 
             <div className="p-4 rounded-xl bg-[var(--bg-grouped)] border border-[var(--separator)] flex items-center gap-3 text-xs text-[var(--text-content-secondary)]">
               <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>Payments secured by Cashfree (India, INR) and Polar (international, USD).</span>
+              <span>Payments secured by Cashfree (India, INR) and Dodo Payments (international, USD).</span>
             </div>
           </div>
 

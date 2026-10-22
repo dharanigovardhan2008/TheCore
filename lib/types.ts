@@ -13,7 +13,7 @@ export interface Profile {
   terms_accepted_at?: string | null;
   plan?: 'free' | 'pro' | string | null;
   plan_expires_at?: string | null;
-  plan_provider?: 'cashfree' | 'polar' | null;
+  plan_provider?: 'cashfree' | 'polar' | 'dodo' | null;
   cancel_at_period_end?: boolean | null;
   role?: 'user' | 'admin' | string | null;
   is_disabled?: boolean | null;
@@ -30,7 +30,7 @@ export interface Order {
   /** Our own merchant order reference (prefix core_), used for BOTH providers. */
   cf_order_id: string;
   cf_payment_session_id?: string | null;
-  provider: 'cashfree' | 'polar';
+  provider: 'cashfree' | 'polar' | 'dodo';
   product: string;
   provider_checkout_id?: string | null;
   provider_order_id?: string | null;

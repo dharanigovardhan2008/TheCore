@@ -11,7 +11,7 @@ Project, platform and encrypted `.env` tracker for developers. Next.js + Supabas
 
 ## Before launch
 
-- Set all env values in your host (see `.env.example`). Use `production` for `POLAR_SERVER` and `CASHFREE_ENV`.
+- Set all env values in your host (see `.env.example`). Use `live_mode` for `DODO_PAYMENTS_ENVIRONMENT` and `production` for `CASHFREE_ENV`.
 - Polar webhook URL: `https://YOUR-DOMAIN/api/webhooks/polar`
   Events: `order.paid`, `order.refunded`, `subscription.active`, `subscription.canceled`, `subscription.uncanceled`, `subscription.past_due`, `subscription.revoked`, `subscription.updated`
 - Cashfree webhook URL: `https://YOUR-DOMAIN/api/cashfree/webhook`
