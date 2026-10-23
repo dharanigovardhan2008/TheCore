@@ -98,7 +98,7 @@ export default function BillingReturnClient({ orderId }: BillingReturnClientProp
         status === 'success'
           ? 'Your transaction completed successfully and you can continue your work without any delay now.'
           : status === 'failed'
-          ? "We couldn't complete your payment. Please try again or choose another payment method."
+          ? errorMessage || "We couldn't complete your payment. Please try again or choose another payment method."
           : status === 'pending'
           ? errorMessage || 'Waiting for payment confirmation. Your account will activate automatically.'
           : 'Verifying your payment. Please do not close this window.'
